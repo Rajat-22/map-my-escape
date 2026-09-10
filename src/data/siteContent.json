@@ -1,0 +1,142 @@
+{
+  "brand": {
+    "name": "MapMyEscape",
+    "tagline": "Ditch the Rigid Itinerary. Escape Your Way.",
+    "subheading": "Tell us your starting point, favorite vibes—temples, treks, cafes, beaches—and let AI plot an interactive real-time route mapped out day by day."
+  },
+  "hints": [
+    {
+      "step": "01",
+      "title": "Pick Your Travel Vibe",
+      "description": "Choose what you crave—hidden cafes, sacred temples, mountain treks, beaches, or waterfalls.",
+      "icon": "Compass"
+    },
+    {
+      "step": "02",
+      "title": "AI Calculates the Route",
+      "description": "Get a sequenced day-by-day plan with travel times, durations, and coordinates between stops.",
+      "icon": "Sparkles"
+    },
+    {
+      "step": "03",
+      "title": "Interactive Real-Time Map",
+      "description": "Zoom and fly to any spot on the live map, inspect details, or tap 'Change Itinerary' to remix.",
+      "icon": "MapPin"
+    }
+  ],
+  "presets": [
+    {
+      "id": "manali-highland",
+      "badge": "Highland Vibe",
+      "title": "Manali Treks & Bohemian Cafes",
+      "startingCity": "Old Manali",
+      "hotel": "The Himalayan Resort & Spa",
+      "days": 3,
+      "interests": [
+        "cafe",
+        "trek",
+        "mountain",
+        "temple"
+      ],
+      "pace": "moderate",
+      "transport": "Scooter & Local Cab",
+      "description": "Scenic alpine trails, Hadimba forest temple, riverside cafes, and Jogini Waterfall."
+    },
+    {
+      "id": "goa-coastal",
+      "badge": "Coastal Drift",
+      "title": "Goa Sunsets, Forts & Shacks",
+      "startingCity": "Anjuna, Goa",
+      "hotel": "W Goa Vagator",
+      "days": 3,
+      "interests": [
+        "beach",
+        "cafe",
+        "viewpoint",
+        "market"
+      ],
+      "pace": "relaxed",
+      "transport": "Rented Scooter",
+      "description": "Cliffside cafes, Vagator sunset point, Saturday night market, and secluded northern beaches."
+    },
+    {
+      "id": "rishikesh-spiritual",
+      "badge": "Soul & River",
+      "title": "Rishikesh Waterfalls & Ganga Ghats",
+      "startingCity": "Tapovan, Rishikesh",
+      "hotel": "Aloha On The Ganges",
+      "days": 2,
+      "interests": [
+        "temple",
+        "waterfall",
+        "cafe",
+        "trek"
+      ],
+      "pace": "moderate",
+      "transport": "Walking & TukTuk",
+      "description": "Morning Ganga aarti, Beatles Ashram, secret Neer Garh waterfall hike, and rooftop German bakeries."
+    }
+  ],
+  "categories": [
+    {
+      "id": "temple",
+      "label": "Temples & Spiritual",
+      "icon": "Sparkles",
+      "color": "amber"
+    },
+    {
+      "id": "cafe",
+      "label": "Cozy Cafes",
+      "icon": "Coffee",
+      "color": "rose"
+    },
+    {
+      "id": "trek",
+      "label": "Hikes & Treks",
+      "icon": "Footprints",
+      "color": "emerald"
+    },
+    {
+      "id": "mountain",
+      "label": "Peaks & Mountains",
+      "icon": "Mountain",
+      "color": "sky"
+    },
+    {
+      "id": "waterfall",
+      "label": "Waterfalls",
+      "icon": "Droplets",
+      "color": "cyan"
+    },
+    {
+      "id": "beach",
+      "label": "Beaches & Coast",
+      "icon": "Waves",
+      "color": "blue"
+    },
+    {
+      "id": "hotel",
+      "label": "Hotels & Stays",
+      "icon": "Hotel",
+      "color": "violet"
+    },
+    {
+      "id": "viewpoint",
+      "label": "Scenic Viewpoints",
+      "icon": "Eye",
+      "color": "orange"
+    },
+    {
+      "id": "heritage",
+      "label": "Heritage & Forts",
+      "icon": "Castle",
+      "color": "yellow"
+    },
+    {
+      "id": "market",
+      "label": "Bazaars & Night Markets",
+      "icon": "ShoppingBag",
+      "color": "pink"
+    }
+  ]
+}
