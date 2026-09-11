@@ -1,10 +1,14 @@
-'use client';
+"use client";
 
-import dynamic from 'next/dynamic';
-import ItineraryForm from '@/components/ItineraryForm';
+import React, { useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import Navbar from "@/components/Navbar";
+import Header from "@/components/Header";
+import ItineraryForm from "@/components/ItineraryForm";
+import { TripRequest, ItineraryData } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
-const MapComponent = dynamic(() => import('@/components/MapComponent'), {
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center bg-slate-900 text-slate-400">
@@ -17,32 +21,100 @@ const MapComponent = dynamic(() => import('@/components/MapComponent'), {
 });
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-6 md:p-12">
-      <div className="z-10 w-full max-w-6xl space-y-8">
-        <header className="text-center">
-          <span className="inline-block rounded-full bg-sky-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-sky-400 border border-sky-500/20 mb-3">
-            Step 1 Baseline
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-            MapMyEscape
-          </h1>
-          <p className="mt-2 text-slate-400 text-base max-w-xl mx-auto">
-            Dynamic AI Travel Planner with Real-Time Map Visualization
-          </p>
-        </header>
+  const planSectionRef = useRef<HTMLDivElement>(null);
+  const [activePreset, setActivePreset] = useState<TripRequest | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentItinerary, setCurrentItinerary] =
+    useState<ItineraryData | null>(null);
+  const [activeStopId, setActiveStopId] = useState<string | null>(null);
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="lg:col-span-1">
-            <ItineraryForm />
+  const handleSelectPreset = (preset: TripRequest) => {
+    setActivePreset(preset);
+    // Smooth scroll down to the form area
+    planSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleStartPlanning = () => {
+    planSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleFormSubmit = async (request: TripRequest) => {
+    setIsGenerating(true);
+    console.log("Submitting Escape Request:", request);
+    try {
+      // Step 4 integration point for AI / Mock itinerary generator
+      const res = await fetch("/api/generate-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentItinerary(data.itinerary || null);
+      }
+    } catch (err) {
+      console.warn("Itinerary API not yet fully connected:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+      <Navbar />
+
+      {/* Brand Header */}
+      <Header
+        onSelectPreset={handleSelectPreset}
+        onStartPlanning={handleStartPlanning}
+      />
+
+      {/* Main Workspace Section */}
+      <main
+        id="plan-section"
+        ref={planSectionRef}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Form / Timeline */}
+          <div className="lg:col-span-5 space-y-6">
+            <ItineraryForm
+              initialValues={activePreset}
+              onSubmit={handleFormSubmit}
+              isLoading={isGenerating}
+            />
+
+            {/* Quick Itinerary Preview when generated (Prepared for Step 4) */}
+            {currentItinerary && (
+              <div className="rounded-2xl border border-sky-500/30 bg-sky-950/20 p-4 text-xs text-slate-300">
+                <span className="font-semibold text-sky-400">
+                  Route Prepared:{" "}
+                </span>
+                {currentItinerary.tripTitle} ({currentItinerary.totalDays} Days)
+              </div>
+            )}
           </div>
-          <div className="lg:col-span-2">
-            <div className="w-full h-[550px] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
-              <MapComponent />
+
+          {/* Right Column: Real-Time Map */}
+          <div className="lg:col-span-7">
+            <div className="sticky top-24 rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl h-[580px]">
+              <MapComponent
+                stops={currentItinerary?.stops || []}
+                activeStopId={activeStopId}
+                onSelectStop={(stop) => setActiveStopId(stop.id)}
+              />
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+        <p>
+          MapMyEscape &copy; {new Date().getFullYear()} &mdash; Dynamic AI
+          Travel Routes & Real-Time Geospatial Visualization
+        </p>
+      </footer>
+    </div>
   );
 }
