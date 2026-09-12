@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
 import Header from "@/components/Header";
 import ItineraryForm from "@/components/ItineraryForm";
-import { TripRequest, ItineraryData } from "@/types/itinerary";
+import ItineraryTimeline from "@/components/ItineraryTimeline";
+import { TripRequest, ItineraryData, ItineraryStop } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -27,6 +28,12 @@ export default function Home() {
   const [currentItinerary, setCurrentItinerary] =
     useState<ItineraryData | null>(null);
   const [activeStopId, setActiveStopId] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number>(0);
+  const [isModifyingForm, setIsModifyingForm] = useState(false);
+
+  const [lastSubmittedRequest, setLastSubmittedRequest] =
+    useState<TripRequest | null>(null);
+  const [isRemixing, setIsRemixing] = useState(false);
 
   const handleSelectPreset = (preset: TripRequest) => {
     setActivePreset(preset);
@@ -40,9 +47,9 @@ export default function Home() {
 
   const handleFormSubmit = async (request: TripRequest) => {
     setIsGenerating(true);
+    setLastSubmittedRequest(request);
     console.log("Submitting Escape Request:", request);
     try {
-      // Step 4 integration point for AI / Mock itinerary generator
       const res = await fetch("/api/generate-itinerary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,7 +57,14 @@ export default function Home() {
       });
       if (res.ok) {
         const data = await res.json();
-        setCurrentItinerary(data.itinerary || null);
+        if (data.itinerary) {
+          setCurrentItinerary(data.itinerary);
+          setIsModifyingForm(false);
+          setSelectedDay(0);
+          if (data.itinerary.stops?.length > 0) {
+            setActiveStopId(data.itinerary.stops[0].id);
+          }
+        }
       }
     } catch (err) {
       console.warn("Itinerary API not yet fully connected:", err);
@@ -59,9 +73,59 @@ export default function Home() {
     }
   };
 
+  const handleRemixTrip = async () => {
+    if (!lastSubmittedRequest && !currentItinerary) return;
+    setIsRemixing(true);
+
+    const baseRequest: TripRequest = lastSubmittedRequest || {
+      startingCity: currentItinerary!.startingCity,
+      hotel: currentItinerary!.hotel,
+      days: currentItinerary!.totalDays,
+      interests: ["cafe", "trek", "mountain"],
+      pace: currentItinerary!.pace,
+      transport: currentItinerary!.transport,
+    };
+
+    const variationRequest: TripRequest = {
+      ...baseRequest,
+      variationSeed: Date.now(),
+    };
+
+    try {
+      const res = await fetch("/api/generate-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(variationRequest),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.itinerary) {
+          setCurrentItinerary(data.itinerary);
+          setSelectedDay(0);
+          if (data.itinerary.stops?.length > 0) {
+            setActiveStopId(data.itinerary.stops[0].id);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Remix failed:", err);
+    } finally {
+      setIsRemixing(false);
+    }
+  };
+
+  const handleSelectSavedItinerary = (saved: ItineraryData) => {
+    setCurrentItinerary(saved);
+    setIsModifyingForm(false);
+    setSelectedDay(0);
+    if (saved.stops?.length > 0) {
+      setActiveStopId(saved.stops[0].id);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <Navbar />
+      <Navbar onSelectSavedItinerary={handleSelectSavedItinerary} />
 
       {/* Brand Header */}
       <Header
@@ -78,20 +142,28 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Form / Timeline */}
           <div className="lg:col-span-5 space-y-6">
-            <ItineraryForm
-              initialValues={activePreset}
-              onSubmit={handleFormSubmit}
-              isLoading={isGenerating}
-            />
-
-            {/* Quick Itinerary Preview when generated (Prepared for Step 4) */}
-            {currentItinerary && (
-              <div className="rounded-2xl border border-sky-500/30 bg-sky-950/20 p-4 text-xs text-slate-300">
-                <span className="font-semibold text-sky-400">
-                  Route Prepared:{" "}
-                </span>
-                {currentItinerary.tripTitle} ({currentItinerary.totalDays} Days)
-              </div>
+            {currentItinerary && !isModifyingForm ? (
+              <ItineraryTimeline
+                itinerary={currentItinerary}
+                activeStopId={activeStopId}
+                selectedDay={selectedDay}
+                onSelectDay={(day) => setSelectedDay(day)}
+                onSelectStop={(stop: ItineraryStop) => setActiveStopId(stop.id)}
+                onModifyTrip={() => setIsModifyingForm(true)}
+                onRemixTrip={handleRemixTrip}
+                isRemixing={isRemixing}
+              />
+            ) : (
+              <ItineraryForm
+                key={
+                  activePreset
+                    ? `${activePreset.startingCity}-${activePreset.days}-${activePreset.interests.join(",")}`
+                    : "default-form"
+                }
+                initialValues={activePreset}
+                onSubmit={handleFormSubmit}
+                isLoading={isGenerating}
+              />
             )}
           </div>
 
@@ -101,6 +173,7 @@ export default function Home() {
               <MapComponent
                 stops={currentItinerary?.stops || []}
                 activeStopId={activeStopId}
+                selectedDay={selectedDay}
                 onSelectStop={(stop) => setActiveStopId(stop.id)}
               />
             </div>

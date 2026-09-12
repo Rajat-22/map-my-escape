@@ -1,9 +1,36 @@
-import React from "react";
-import { Compass, Sparkles, MapPin } from "lucide-react";
+"use client";
+
+import { useState, useSyncExternalStore } from "react";
+import { Compass, Sparkles, MapPin, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import siteContent from "@/data/siteContent.json";
+import { ItineraryData } from "@/types/itinerary";
+import {
+  getSavedItineraries,
+  getSavedItinerariesServerSnapshot,
+  subscribeToSavedItineraries,
+  removeSavedItinerary,
+} from "@/lib/storage";
 
-export default function Navbar() {
+export interface NavbarProps {
+  onSelectSavedItinerary?: (itinerary: ItineraryData) => void;
+}
+
+export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Subscribe to storage changes with stable cached snapshots
+  const savedEscapes = useSyncExternalStore(
+    subscribeToSavedItineraries,
+    getSavedItineraries,
+    getSavedItinerariesServerSnapshot
+  );
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    removeSavedItinerary(id);
+  };
+
   return (
     <nav className="w-full border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -26,11 +53,94 @@ export default function Navbar() {
             <Sparkles className="w-3 h-3" />
             AI-Powered Live Routing
           </Badge>
+
+          {/* Saved Escapes Toggle Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => !prev)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-teal-400" />
+              <span>Saved</span>
+              {savedEscapes.length > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-mono text-[10px] border border-teal-500/30 font-bold">
+                  {savedEscapes.length}
+                </span>
+              )}
+            </button>
+
+            {/* Saved Escapes Dropdown Drawer */}
+            {isOpen && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-4 z-50 text-slate-100">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-1.5 font-bold text-sm text-white">
+                    <Bookmark className="w-4 h-4 text-teal-400" />
+                    <span>Saved Escapes ({savedEscapes.length})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="mt-3 max-h-72 overflow-y-auto space-y-2 scrollbar-none">
+                  {savedEscapes.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-slate-400">
+                      <p>No saved itineraries yet.</p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Click &quot;Save Escape&quot; on any generated route to revisit it here.
+                      </p>
+                    </div>
+                  ) : (
+                    savedEscapes.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          onSelectSavedItinerary?.(item);
+                          setIsOpen(false);
+                          document
+                            .getElementById("plan-section")
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="group flex items-center justify-between p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-teal-500/40 cursor-pointer transition-all"
+                      >
+                        <div className="min-w-0 flex-1 pr-2">
+                          <h4 className="text-xs font-semibold text-white group-hover:text-teal-300 truncate">
+                            {item.tripTitle}
+                          </h4>
+                          <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                            {item.startingCity} &bull; {item.totalDays} Days &bull; {item.stops.length} Stops
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            title="Remove saved escape"
+                            onClick={(e) => handleDelete(e, item.id)}
+                            className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-teal-400 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <a
             href="#plan-section"
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-lg shadow-sky-500/20 transition-all flex items-center gap-1.5"
           >
-            <MapPin className="w-3.5 h-3.5 text-sky-400" />
+            <MapPin className="w-3.5 h-3.5 text-slate-950" />
             <span>Start Route</span>
           </a>
         </div>

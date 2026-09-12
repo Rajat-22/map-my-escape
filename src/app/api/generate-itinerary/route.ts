@@ -7,7 +7,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     message: "MapMyEscape AI Generator Engine is ready and operational.",
-    supportedModels: ["gemini-1.5-flash", "gemini-1.5-pro"],
+    supportedModels: ["gemini-3.6-flash", "gemini-flash-latest"],
   });
 }
 
@@ -54,19 +54,12 @@ export async function POST(req: NextRequest) {
     apiKey.trim() !== "" &&
     apiKey !== "your_actual_api_key_here";
 
-  // If Gemini API Key is available, invoke AI
+  // If Gemini API Key is available, invoke AI with multi-model resiliency
   if (isKeyConfigured) {
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-        },
-      });
+    const candidateModels = ["gemini-3.6-flash", "gemini-flash-latest"];
+    const genAI = new GoogleGenerativeAI(apiKey);
 
-      const prompt = `
+    const prompt = `
 You are MapMyEscape, an expert spontaneous travel planner. Generate a realistic, spatially sequenced day-by-day travel itinerary for:
 - Destination / Starting Location: ${sanitizedRequest.startingCity}
 - Base Stay / Hotel: ${sanitizedRequest.hotel || "Centrally located boutique stay"}
@@ -121,34 +114,56 @@ CRITICAL RULES:
 3. Every stop must have a category from: temple, cafe, trek, mountain, waterfall, beach, hotel, viewpoint, heritage, market, other.
 `;
 
-      const result = await model.generateContent(prompt);
-      const textResponse = result.response.text();
-      const parsedData = JSON.parse(textResponse);
-
-      // Validate parsed data structure
-      if (parsedData && Array.isArray(parsedData.days) && parsedData.days.length > 0) {
-        // Flatten stops for direct map consumption
-        const flatStops: ItineraryStop[] = [];
-        parsedData.days.forEach((day: DayPlan) => {
-          if (Array.isArray(day.stops)) {
-            day.stops.forEach((stop: ItineraryStop) => flatStops.push(stop));
+    for (const modelName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel(
+          {
+            model: modelName,
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.7,
+            },
+          },
+          {
+            timeout: 15000,
           }
-        });
+        );
 
-        const itinerary: ItineraryData = {
-          ...parsedData,
-          stops: flatStops,
-          isFallback: false,
-        };
+        const result = await model.generateContent(prompt);
+        const textResponse = result.response.text();
+        const parsedData = JSON.parse(textResponse);
 
-        return NextResponse.json({
-          success: true,
-          source: "gemini-ai",
-          itinerary,
-        });
+        // Validate parsed data structure
+        if (
+          parsedData &&
+          Array.isArray(parsedData.days) &&
+          parsedData.days.length > 0
+        ) {
+          const flatStops: ItineraryStop[] = [];
+          parsedData.days.forEach((day: DayPlan) => {
+            if (Array.isArray(day.stops)) {
+              day.stops.forEach((stop: ItineraryStop) => flatStops.push(stop));
+            }
+          });
+
+          const itinerary: ItineraryData = {
+            ...parsedData,
+            stops: flatStops,
+            isFallback: false,
+          };
+
+          return NextResponse.json({
+            success: true,
+            source: `gemini-ai (${modelName})`,
+            itinerary,
+          });
+        }
+      } catch (aiError) {
+        console.warn(
+          `Gemini model ${modelName} call failed or timed out:`,
+          aiError
+        );
       }
-    } catch (aiError) {
-      console.warn("Gemini API call failed or timed out, activating intelligent fallback engine:", aiError);
     }
   }
 
