@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   MapPin,
   Building,
@@ -69,31 +69,25 @@ export default function ItineraryForm({
   onSubmit,
   isLoading = false,
 }: ItineraryFormProps) {
-  const [startingCity, setStartingCity] = useState("Manali, Himachal Pradesh");
-  const [hotel, setHotel] = useState("Old Manali Backpacker Hostel");
-  const [days, setDays] = useState(3);
-  const [interests, setInterests] = useState<string[]>([
-    "cafe",
-    "trek",
-    "mountain",
-  ]);
-  const [pace, setPace] = useState<"relaxed" | "moderate" | "fast">("moderate");
-  const [transport, setTransport] = useState("Scooter & Local Cab");
-  const [customNotes, setCustomNotes] = useState("");
-  const [prevInitialValues, setPrevInitialValues] = useState<TripRequest | null>(null);
-
-  // Sync state during render when a new preset is selected
-  if (initialValues && initialValues !== prevInitialValues) {
-    setPrevInitialValues(initialValues);
-    if (initialValues.startingCity) setStartingCity(initialValues.startingCity);
-    if (initialValues.hotel !== undefined) setHotel(initialValues.hotel || "");
-    if (initialValues.days) setDays(initialValues.days);
-    if (initialValues.interests) setInterests(initialValues.interests);
-    if (initialValues.pace) setPace(initialValues.pace);
-    if (initialValues.transport) setTransport(initialValues.transport);
-    if (initialValues.customNotes !== undefined)
-      setCustomNotes(initialValues.customNotes || "");
-  }
+  const [startingCity, setStartingCity] = useState(
+    () => initialValues?.startingCity ?? "Manali, Himachal Pradesh"
+  );
+  const [hotel, setHotel] = useState(
+    () => initialValues?.hotel ?? "Old Manali Backpacker Hostel"
+  );
+  const [days, setDays] = useState(() => initialValues?.days ?? 3);
+  const [interests, setInterests] = useState<string[]>(
+    () => initialValues?.interests ?? ["cafe", "trek", "mountain"]
+  );
+  const [pace, setPace] = useState<"relaxed" | "moderate" | "fast">(
+    () => initialValues?.pace ?? "moderate"
+  );
+  const [transport, setTransport] = useState(
+    () => initialValues?.transport ?? "Scooter & Local Cab"
+  );
+  const [customNotes, setCustomNotes] = useState(
+    () => initialValues?.customNotes ?? ""
+  );
 
   const toggleInterest = (interestId: string) => {
     setInterests((prev) =>
@@ -156,10 +150,34 @@ export default function ItineraryForm({
         {/* 1. Starting City & Hotel */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-sky-400" />
-              Starting Location / City <span className="text-rose-400">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-sky-400" />
+                Starting Location / City <span className="text-rose-400">*</span>
+              </label>
+
+              {/* Quick Destination Starter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                {[
+                  { name: "Manali", city: "Old Manali, Himachal Pradesh", hotel: "Old Manali Backpacker Hostel" },
+                  { name: "Rishikesh", city: "Rishikesh, Uttarakhand", hotel: "Tapovan Ganga Retreat" },
+                  { name: "Goa", city: "Anjuna, North Goa", hotel: "Anjuna Beachfront Shack" },
+                  { name: "Jaipur", city: "Jaipur, Rajasthan", hotel: "Heritage Haveli Stay" },
+                ].map((item) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => {
+                      setStartingCity(item.city);
+                      setHotel(item.hotel);
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all font-mono"
+                  >
+                    +{item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="text"
               required
