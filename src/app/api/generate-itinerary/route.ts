@@ -3,11 +3,16 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TripRequest, ItineraryData, ItineraryStop, DayPlan } from "@/types/itinerary";
 import { generateFallbackItinerary } from "@/lib/destinationData";
 
+// Gemini can take 30-45s on a full itinerary prompt, so allow enough time
+// for the route handler to finish before the platform cancels it.
+export const maxDuration = 60;
+
 export async function GET() {
   return NextResponse.json({
     status: "ok",
     message: "MapMyEscape AI Generator Engine is ready and operational.",
-    supportedModels: ["gemini-3.6-flash", "gemini-flash-latest"],
+    keyConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    supportedModels: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"],
   });
 }
 
@@ -48,15 +53,19 @@ export async function POST(req: NextRequest) {
     customNotes: tripRequest.customNotes?.trim() || undefined,
   };
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  const isKeyConfigured =
-    apiKey &&
-    apiKey.trim() !== "" &&
-    apiKey !== "your_actual_api_key_here";
+  // Only requirement: a non-empty key is present in the environment.
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const isKeyConfigured = Boolean(apiKey);
 
   // If Gemini API Key is available, invoke AI with multi-model resiliency
-  if (isKeyConfigured) {
-    const candidateModels = ["gemini-3.6-flash", "gemini-flash-latest"];
+  if (isKeyConfigured && apiKey) {
+    // Order matters: newest first, then progressively more available fallbacks.
+    // `gemini-flash-latest` frequently returns 503 under high demand, so it is last.
+    const candidateModels = [
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-flash-latest",
+    ];
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const prompt = `
@@ -109,60 +118,104 @@ Return valid JSON strictly matching this schema:
 }
 
 CRITICAL RULES:
-1. Coordinates ("lat" and "lng") MUST be accurate, valid floating numbers located near ${sanitizedRequest.startingCity}.
+1. Coordinates ("lat" and "lng") MUST be accurate, valid floating-point numbers (numbers, never strings, never null, never NaN) for real places near ${sanitizedRequest.startingCity}.
 2. Ensure realistic route sequence so user travels smoothly from one stop to the next.
 3. Every stop must have a category from: temple, cafe, trek, mountain, waterfall, beach, hotel, viewpoint, heritage, market, other.
+4. Output must be a single raw JSON object. Do not wrap it in markdown fences or add commentary.
+5. Every stop must include the keys: id, day, order, timeOfDay, name, category, lat, lng, estimatedDuration, description, insiderTip.
 `;
 
     for (const modelName of candidateModels) {
-      try {
-        const model = genAI.getGenerativeModel(
-          {
-            model: modelName,
-            generationConfig: {
-              responseMimeType: "application/json",
-              temperature: 0.7,
+      // The newest Gemini models emit reasoning tokens, so a full itinerary
+      // prompt regularly takes 15-40s. The old 15s timeout aborted every call
+      // and silently fell back to the generator.
+      const attemptTimeout = Number(process.env.GEMINI_TIMEOUT_MS) || 45000;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const model = genAI.getGenerativeModel(
+            {
+              model: modelName,
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.7,
+                maxOutputTokens: 8192,
+              },
             },
-          },
-          {
-            timeout: 15000,
-          }
-        );
-
-        const result = await model.generateContent(prompt);
-        const textResponse = result.response.text();
-        const parsedData = JSON.parse(textResponse);
-
-        // Validate parsed data structure
-        if (
-          parsedData &&
-          Array.isArray(parsedData.days) &&
-          parsedData.days.length > 0
-        ) {
-          const flatStops: ItineraryStop[] = [];
-          parsedData.days.forEach((day: DayPlan) => {
-            if (Array.isArray(day.stops)) {
-              day.stops.forEach((stop: ItineraryStop) => flatStops.push(stop));
+            {
+              timeout: attemptTimeout,
             }
-          });
+          );
 
-          const itinerary: ItineraryData = {
-            ...parsedData,
-            stops: flatStops,
-            isFallback: false,
-          };
+          const result = await model.generateContent(prompt);
+          const textResponse = result.response.text();
 
-          return NextResponse.json({
-            success: true,
-            source: `gemini-ai (${modelName})`,
-            itinerary,
-          });
+          // Models occasionally wrap JSON in markdown fences despite responseMimeType.
+          const cleaned = textResponse
+            .replace(/^\s*```(?:json)?/i, "")
+            .replace(/```\s*$/, "")
+            .trim();
+
+          const parsedData = JSON.parse(cleaned);
+
+          // Validate parsed data structure
+          if (
+            parsedData &&
+            Array.isArray(parsedData.days) &&
+            parsedData.days.length > 0
+          ) {
+            const flatStops: ItineraryStop[] = [];
+            parsedData.days.forEach((day: DayPlan) => {
+              if (Array.isArray(day.stops)) {
+                day.stops.forEach((stop: ItineraryStop) => {
+                  // Drop stops with missing/invalid coordinates so Leaflet never
+                  // receives NaN and crashes the map render.
+                  if (Number.isFinite(Number(stop.lat)) && Number.isFinite(Number(stop.lng))) {
+                    flatStops.push({
+                      ...stop,
+                      lat: Number(stop.lat),
+                      lng: Number(stop.lng),
+                    });
+                  }
+                });
+              }
+            });
+
+            if (flatStops.length === 0) {
+              throw new Error(
+                `Model ${modelName} returned no stops with valid coordinates.`
+              );
+            }
+
+            const itinerary: ItineraryData = {
+              ...parsedData,
+              stops: flatStops,
+              isFallback: false,
+            };
+
+            return NextResponse.json({
+              success: true,
+              source: `gemini-ai (${modelName})`,
+              itinerary,
+            });
+          }
+
+          throw new Error(`Model ${modelName} returned an unexpected JSON shape.`);
+        } catch (aiError) {
+          const message =
+            aiError instanceof Error ? aiError.message : String(aiError);
+          console.warn(
+            `[generate-itinerary] ${modelName} attempt ${attempt}/2 failed: ${message}`
+          );
+
+          // Retry once on transient/timeout failures; do not retry bad output.
+          const isTransient =
+            /aborted|timeout|503|502|504|429|high demand|overloaded|fetch failed/i.test(
+              message
+            );
+          if (!isTransient || attempt === 2) break;
+          await new Promise((resolve) => setTimeout(resolve, 800));
         }
-      } catch (aiError) {
-        console.warn(
-          `Gemini model ${modelName} call failed or timed out:`,
-          aiError
-        );
       }
     }
   }

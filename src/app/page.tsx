@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
+import ModalDialog from "@/components/ModalDialog";
 import Navbar from "@/components/Navbar";
 import Header from "@/components/Header";
 import ItineraryForm from "@/components/ItineraryForm";
@@ -22,8 +23,9 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
 });
 
 export default function Home() {
-  const planSectionRef = useRef<HTMLDivElement>(null);
-  const [activePreset, setActivePreset] = useState<TripRequest | null>(null);
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
+  const handleClosePlanner = useCallback(() => setIsPlannerOpen(false), []);
+  const [formInitialValues, setFormInitialValues] = useState<TripRequest | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentItinerary, setCurrentItinerary] =
     useState<ItineraryData | null>(null);
@@ -35,14 +37,8 @@ export default function Home() {
     useState<TripRequest | null>(null);
   const [isRemixing, setIsRemixing] = useState(false);
 
-  const handleSelectPreset = (preset: TripRequest) => {
-    setActivePreset(preset);
-    // Smooth scroll down to the form area
-    planSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const handleStartPlanning = () => {
-    planSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    setIsPlannerOpen(true);
   };
 
   const handleFormSubmit = async (request: TripRequest) => {
@@ -116,6 +112,8 @@ export default function Home() {
 
   const handleSelectSavedItinerary = (saved: ItineraryData) => {
     setCurrentItinerary(saved);
+    setLastSubmittedRequest(null);
+    setIsPlannerOpen(true);
     setIsModifyingForm(false);
     setSelectedDay(0);
     if (saved.stops?.length > 0) {
@@ -125,23 +123,25 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <Navbar onSelectSavedItinerary={handleSelectSavedItinerary} />
-
-      {/* Brand Header */}
-      <Header
-        onSelectPreset={handleSelectPreset}
-        onStartPlanning={handleStartPlanning}
+      <Navbar
+        onSelectSavedItinerary={handleSelectSavedItinerary}
+        onOpenPlanner={handleStartPlanning}
       />
 
-      {/* Main Workspace Section */}
-      <main
-        id="plan-section"
-        ref={planSectionRef}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1"
+      {/* Brand Header */}
+      <Header onStartPlanning={handleStartPlanning} />
+
+      {/* The planner exists only inside the dialog, never below the landing page. */}
+      <ModalDialog
+        isOpen={isPlannerOpen}
+        onClose={handleClosePlanner}
+        title="AI Escape Route Planner"
+        subtitle="Plan your trip and explore your itinerary without leaving this dialog."
+        showOkButton={!!currentItinerary && !isModifyingForm}
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Form / Timeline */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="min-w-0 lg:col-span-5 space-y-6">
             {currentItinerary && !isModifyingForm ? (
               <ItineraryTimeline
                 itinerary={currentItinerary}
@@ -149,18 +149,28 @@ export default function Home() {
                 selectedDay={selectedDay}
                 onSelectDay={(day) => setSelectedDay(day)}
                 onSelectStop={(stop: ItineraryStop) => setActiveStopId(stop.id)}
-                onModifyTrip={() => setIsModifyingForm(true)}
+                onModifyTrip={() => {
+                  setFormInitialValues(lastSubmittedRequest || {
+                    startingCity: currentItinerary.startingCity,
+                    hotel: currentItinerary.hotel,
+                    days: currentItinerary.totalDays,
+                    interests: [...new Set(currentItinerary.stops.map((stop) => stop.category))],
+                    pace: currentItinerary.pace,
+                    transport: currentItinerary.transport,
+                  });
+                  setIsModifyingForm(true);
+                }}
                 onRemixTrip={handleRemixTrip}
                 isRemixing={isRemixing}
               />
             ) : (
               <ItineraryForm
                 key={
-                  activePreset
-                    ? `${activePreset.startingCity}-${activePreset.days}-${activePreset.interests.join(",")}`
+                  formInitialValues
+                    ? `${formInitialValues.startingCity}-${formInitialValues.days}-${formInitialValues.interests.join(",")}`
                     : "default-form"
                 }
-                initialValues={activePreset}
+                initialValues={formInitialValues}
                 onSubmit={handleFormSubmit}
                 isLoading={isGenerating}
               />
@@ -168,8 +178,8 @@ export default function Home() {
           </div>
 
           {/* Right Column: Real-Time Map */}
-          <div className="lg:col-span-7">
-            <div className="sticky top-24 rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl h-[580px]">
+          <div className="min-w-0 lg:col-span-7 lg:sticky lg:top-0">
+            <div className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl h-[480px] lg:h-[580px]">
               <MapComponent
                 stops={currentItinerary?.stops || []}
                 activeStopId={activeStopId}
@@ -179,7 +189,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </main>
+      </ModalDialog>
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
