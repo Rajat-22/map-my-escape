@@ -112,6 +112,14 @@ function MapViewController({
 }) {
   const map = useMap();
 
+  // Invalidate size once mounted/rendered so maps in modals or dynamic containers size properly
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+
   useEffect(() => {
     if (activeStop) {
       map.flyTo([activeStop.lat, activeStop.lng], 15, {
