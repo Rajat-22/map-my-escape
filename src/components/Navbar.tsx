@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { Compass, Sparkles, MapPin, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { Compass, MapPin, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
 import siteContent from "@/data/siteContent.json";
 import { ItineraryData } from "@/types/itinerary";
 import {
@@ -14,9 +13,10 @@ import {
 
 export interface NavbarProps {
   onSelectSavedItinerary?: (itinerary: ItineraryData) => void;
+  onOpenPlanner?: () => void;
 }
 
-export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
+export default function Navbar({ onSelectSavedItinerary, onOpenPlanner }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Subscribe to storage changes with stable cached snapshots
@@ -38,22 +38,12 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
           <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-lg shadow-sky-500/20">
             <Compass className="h-6 w-6 animate-pulse" />
           </div>
-          <div>
-            <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-              {siteContent.brand.name}
-              <span className="text-sky-400 text-xs px-1.5 py-0.5 rounded border border-sky-400/30 bg-sky-400/10 font-mono">
-                v1.0
-              </span>
-            </span>
-          </div>
+          <span className="text-xl font-bold tracking-tight text-white">
+            {siteContent.brand.name}
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
-          <Badge variant="teal" size="sm" className="hidden sm:inline-flex">
-            <Sparkles className="w-3 h-3" />
-            AI-Powered Live Routing
-          </Badge>
-
           {/* Saved Escapes Toggle Button */}
           <div className="relative">
             <button
@@ -102,9 +92,6 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
                         onClick={() => {
                           onSelectSavedItinerary?.(item);
                           setIsOpen(false);
-                          document
-                            .getElementById("plan-section")
-                            ?.scrollIntoView({ behavior: "smooth" });
                         }}
                         className="group flex items-center justify-between p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-teal-500/40 cursor-pointer transition-all"
                       >
@@ -136,13 +123,14 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
             )}
           </div>
 
-          <a
-            href="#plan-section"
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-lg shadow-sky-500/20 transition-all flex items-center gap-1.5"
+          <button
+            type="button"
+            onClick={onOpenPlanner}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-lg shadow-sky-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <MapPin className="w-3.5 h-3.5 text-slate-950" />
-            <span>Start Route</span>
-          </a>
+            <span>Open Planner</span>
+          </button>
         </div>
       </div>
     </nav>
