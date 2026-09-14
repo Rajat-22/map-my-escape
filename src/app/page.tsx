@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Header from "@/components/Header";
 import ItineraryForm from "@/components/ItineraryForm";
 import ItineraryTimeline from "@/components/ItineraryTimeline";
+import GeneratingOverlay from "@/components/GeneratingOverlay";
 import { TripRequest, ItineraryData, ItineraryStop } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
@@ -37,12 +38,18 @@ export default function Home() {
     useState<TripRequest | null>(null);
   const [isRemixing, setIsRemixing] = useState(false);
 
+  // Drives the generating overlay. Held separately from `isGenerating` so the
+  // overlay always has the request it is narrating, even on the first render
+  // after submit (when `lastSubmittedRequest` and `isGenerating` both flip).
+  const [generatingFor, setGeneratingFor] = useState<TripRequest | null>(null);
+
   const handleStartPlanning = () => {
     setIsPlannerOpen(true);
   };
 
   const handleFormSubmit = async (request: TripRequest) => {
     setIsGenerating(true);
+    setGeneratingFor(request);
     setLastSubmittedRequest(request);
     console.log("Submitting Escape Request:", request);
     try {
@@ -66,6 +73,7 @@ export default function Home() {
       console.warn("Itinerary API not yet fully connected:", err);
     } finally {
       setIsGenerating(false);
+      setGeneratingFor(null);
     }
   };
 
@@ -75,7 +83,7 @@ export default function Home() {
 
     const baseRequest: TripRequest = lastSubmittedRequest || {
       startingCity: currentItinerary!.startingCity,
-      hotel: currentItinerary!.hotel,
+      mustVisitPlaces: currentItinerary!.mustVisitPlaces,
       days: currentItinerary!.totalDays,
       interests: ["cafe", "trek", "mountain"],
       pace: currentItinerary!.pace,
@@ -139,7 +147,16 @@ export default function Home() {
         subtitle="Plan your trip and explore your itinerary without leaving this dialog."
         showOkButton={!!currentItinerary && !isModifyingForm}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* `relative` anchors the generating overlay so it greys out the entire
+            planner — form and map — while a request is in flight. */}
+        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {isGenerating && (
+            <GeneratingOverlay
+              mustVisitPlaces={generatingFor?.mustVisitPlaces}
+              startingCity={generatingFor?.startingCity}
+              interests={generatingFor?.interests}
+            />
+          )}
           {/* Left Column: Form / Timeline */}
           <div className="min-w-0 lg:col-span-5 space-y-6">
             {currentItinerary && !isModifyingForm ? (
@@ -152,7 +169,7 @@ export default function Home() {
                 onModifyTrip={() => {
                   setFormInitialValues(lastSubmittedRequest || {
                     startingCity: currentItinerary.startingCity,
-                    hotel: currentItinerary.hotel,
+                    mustVisitPlaces: currentItinerary.mustVisitPlaces,
                     days: currentItinerary.totalDays,
                     interests: [...new Set(currentItinerary.stops.map((stop) => stop.category))],
                     pace: currentItinerary.pace,
@@ -167,7 +184,7 @@ export default function Home() {
               <ItineraryForm
                 key={
                   formInitialValues
-                    ? `${formInitialValues.startingCity}-${formInitialValues.days}-${formInitialValues.interests.join(",")}`
+                    ? `${formInitialValues.startingCity}-${formInitialValues.days}-${formInitialValues.interests.join(",")}-${(formInitialValues.mustVisitPlaces ?? []).join(",")}`
                     : "default-form"
                 }
                 initialValues={formInitialValues}

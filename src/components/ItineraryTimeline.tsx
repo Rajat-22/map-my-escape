@@ -5,6 +5,7 @@ import {
   Clock,
   Compass,
   Lightbulb,
+  MapPin,
   Navigation,
   Sparkles,
   Luggage,
@@ -59,6 +60,10 @@ export default function ItineraryTimeline({
 
   const [copied, setCopied] = useState(false);
 
+  // Places the traveler explicitly asked to include, in a non-optional shape
+  // so they can be rendered as chips without extra narrowing at each use.
+  const mustVisitChips: string[] = itinerary.mustVisitPlaces ?? [];
+
   // Subscribe to storage changes with stable snapshot
   const isSaved = useSyncExternalStore(
     subscribeToSavedItineraries,
@@ -85,9 +90,10 @@ export default function ItineraryTimeline({
   const handleShareCopy = () => {
     const summaryText = [
       `🗺️ ${itinerary.tripTitle}`,
-      `📍 Starting from: ${itinerary.startingCity}${
-        itinerary.hotel ? ` (Stay: ${itinerary.hotel})` : ""
-      }`,
+      `📍 Starting from: ${itinerary.startingCity}`,
+      ...(mustVisitChips.length > 0
+        ? [`⭐ Must-visit: ${mustVisitChips.join(", ")}`]
+        : []),
       `⏱️ Duration: ${itinerary.totalDays} Days | Pace: ${itinerary.pace}`,
       `🚗 Transport: ${itinerary.transport}`,
       "",
@@ -231,6 +237,25 @@ export default function ItineraryTimeline({
             </div>
           )}
         </div>
+
+        {/* Must-visit places the traveler asked for, echoed back as chips */}
+        {mustVisitChips.length > 0 && (
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-300 shrink-0">
+              <Sparkles className="w-3.5 h-3.5" />
+              Your must-visits
+            </span>
+            {mustVisitChips.map((place) => (
+              <span
+                key={place}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-200 border-teal-500/40 text-[11px] font-medium"
+              >
+                <MapPin className="w-3 h-3 text-teal-400 shrink-0" />
+                {place}
+              </span>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* 2. Day Selector Filter Tabs */}
