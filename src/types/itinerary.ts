@@ -40,7 +40,7 @@ export interface ItineraryData {
   id: string;
   tripTitle: string;
   startingCity: string;
-  hotel?: string;
+  mustVisitPlaces?: string[];
   destinationSummary: string;
   totalDays: number;
   pace: "relaxed" | "moderate" | "fast";
@@ -55,7 +55,7 @@ export interface ItineraryData {
 
 export interface TripRequest {
   startingCity: string;
-  hotel?: string;
+  mustVisitPlaces?: string[];
   days: number;
   interests: string[];
   pace: "relaxed" | "moderate" | "fast";

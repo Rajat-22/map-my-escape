@@ -288,6 +288,47 @@ export function generateFallbackItinerary(request: TripRequest): ItineraryData {
 
   const availablePresetStops = [...destinationInfo.presetStops];
 
+  // The traveler's own must-visit list takes priority over suggested stops, so
+  // it is scheduled first and every entry is guaranteed a slot in the plan.
+  const userPlaces = (request.mustVisitPlaces ?? [])
+    .filter((place) => typeof place === "string" && place.trim().length > 0)
+    .map((place) => place.trim());
+
+  // Heuristic category guess so user-added chips still get a matching icon.
+  const guessCategory = (place: string): ItineraryCategory => {
+    const name = place.toLowerCase();
+    if (/(temple|mandir|math|dham|church|masjid|gurudwara|monastery)/.test(name)) return "temple";
+    if (/(cafe|coffee|bakery|restaurant|dhaba|bistro|kitchen|food)/.test(name)) return "cafe";
+    if (/(trek|trail|hike|pass|base ?camp)/.test(name)) return "trek";
+    if (/(waterfall|falls|jhari)/.test(name)) return "waterfall";
+    if (/(beach|bay|shore|sand)/.test(name)) return "beach";
+    if (/(fort|palace|haveli|museum|ruins|ashram|quarter)/.test(name)) return "heritage";
+    if (/(market|bazaar|bazar|flea|mall)/.test(name)) return "market";
+    if (/(viewpoint|point|sunset|sunrise|peak|cliff|lake|valley|hill)/.test(name)) return "viewpoint";
+    if (/(mountain|glacier|snow|meadow|park|garden)/.test(name)) return "mountain";
+    return "other";
+  };
+
+  const userStops: ItineraryStop[] = userPlaces.map((place, index) => {
+    const angle = (index * 137.5 * Math.PI) / 180;
+    const radius = 0.008 + index * 0.0035;
+    return {
+      id: `stop-user-${index + 1}`,
+      day: 1,
+      order: index + 1,
+      timeOfDay: timeSlots[index % timeSlots.length],
+      name: place,
+      category: guessCategory(place),
+      lat: Number((baseCoords.lat + Math.sin(angle) * radius).toFixed(5)),
+      lng: Number((baseCoords.lng + Math.cos(angle) * radius).toFixed(5)),
+      estimatedDuration: "1.5 hours",
+      travelTimeFromPrevious: index === 0 ? "15-20 min from Stay" : `20-25 min via ${request.transport}`,
+      description: `A spot you specifically wanted to experience in ${request.startingCity}. Paced into the day so it fits naturally with your other stops.`,
+      insiderTip: "You hand-picked this one — go at your own rhythm and keep buffer time for it.",
+      bestTimeToVisit: timeSlots[index % timeSlots.length],
+    };
+  });
+
   for (let dayNum = 1; dayNum <= request.days; dayNum++) {
     const dayStops: ItineraryStop[] = [];
     const dayThemes = [
@@ -329,6 +370,22 @@ export function generateFallbackItinerary(request: TripRequest): ItineraryData {
       allStops.push(stop);
     }
 
+    // Splice the traveler's requested places in, spreading them evenly across
+    // the trip so each one lands on a different day where possible.
+    userStops
+      .filter((_, i) => i % request.days === dayNum - 1)
+      .forEach((userStop, i) => {
+        const stop: ItineraryStop = {
+          ...userStop,
+          day: dayNum,
+          order: stopsPerDay + i + 1,
+          timeOfDay: timeSlots[(stopsPerDay + i) % timeSlots.length],
+          travelTimeFromPrevious: `20-25 min via ${request.transport}`,
+        };
+        dayStops.push(stop);
+        allStops.push(stop);
+      });
+
     days.push({
       day: dayNum,
       title: `Day ${dayNum}: ${dayThemes[(dayNum - 1) % dayThemes.length]}`,
@@ -341,14 +398,16 @@ export function generateFallbackItinerary(request: TripRequest): ItineraryData {
     id: `escape-${Date.now()}`,
     tripTitle: `${request.days}-Day ${request.startingCity} Escape Route`,
     startingCity: request.startingCity,
-    hotel: request.hotel,
+    mustVisitPlaces: userPlaces.length > 0 ? userPlaces : undefined,
     destinationSummary: destinationInfo.summary,
     totalDays: request.days,
     pace: request.pace,
     transport: request.transport,
     days,
     stops: allStops,
-    highlights: destinationInfo.highlights,
+    highlights: userPlaces.length > 0
+      ? [...userPlaces.slice(0, 2), ...destinationInfo.highlights].slice(0, 3)
+      : destinationInfo.highlights,
     packingTips: destinationInfo.packing,
     bestSeason: destinationInfo.season,
     isFallback: true,
