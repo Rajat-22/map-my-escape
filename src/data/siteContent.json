@@ -24,59 +24,6 @@
       "icon": "MapPin"
     }
   ],
-  "presets": [
-    {
-      "id": "manali-highland",
-      "badge": "Highland Vibe",
-      "title": "Manali Treks & Bohemian Cafes",
-      "startingCity": "Old Manali",
-      "hotel": "The Himalayan Resort & Spa",
-      "days": 3,
-      "interests": [
-        "cafe",
-        "trek",
-        "mountain",
-        "temple"
-      ],
-      "pace": "moderate",
-      "transport": "Scooter & Local Cab",
-      "description": "Scenic alpine trails, Hadimba forest temple, riverside cafes, and Jogini Waterfall."
-    },
-    {
-      "id": "goa-coastal",
-      "badge": "Coastal Drift",
-      "title": "Goa Sunsets, Forts & Shacks",
-      "startingCity": "Anjuna, Goa",
-      "hotel": "W Goa Vagator",
-      "days": 3,
-      "interests": [
-        "beach",
-        "cafe",
-        "viewpoint",
-        "market"
-      ],
-      "pace": "relaxed",
-      "transport": "Rented Scooter",
-      "description": "Cliffside cafes, Vagator sunset point, Saturday night market, and secluded northern beaches."
-    },
-    {
-      "id": "rishikesh-spiritual",
-      "badge": "Soul & River",
-      "title": "Rishikesh Waterfalls & Ganga Ghats",
-      "startingCity": "Tapovan, Rishikesh",
-      "hotel": "Aloha On The Ganges",
-      "days": 2,
-      "interests": [
-        "temple",
-        "waterfall",
-        "cafe",
-        "trek"
-      ],
-      "pace": "moderate",
-      "transport": "Walking & TukTuk",
-      "description": "Morning Ganga aarti, Beatles Ashram, secret Neer Garh waterfall hike, and rooftop German bakeries."
-    }
-  ],
   "categories": [
     {
       "id": "temple",
