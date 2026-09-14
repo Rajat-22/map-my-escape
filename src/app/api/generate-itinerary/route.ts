@@ -43,9 +43,22 @@ export async function POST(req: NextRequest) {
       : ["cafe", "viewpoint", "trek"];
   const transport = tripRequest.transport || "Scooter & Local Cab";
 
+  // User-supplied must-visit spots: trimmed, de-duplicated, capped so the
+  // prompt stays within a sane size.
+  const mustVisitPlaces = Array.isArray(tripRequest.mustVisitPlaces)
+    ? [
+        ...new Set(
+          tripRequest.mustVisitPlaces
+            .filter((place): place is string => typeof place === "string")
+            .map((place) => place.trim())
+            .filter(Boolean)
+        ),
+      ].slice(0, 20)
+    : [];
+
   const sanitizedRequest: TripRequest = {
     startingCity: tripRequest.startingCity.trim(),
-    hotel: tripRequest.hotel?.trim() || undefined,
+    mustVisitPlaces: mustVisitPlaces.length > 0 ? mustVisitPlaces : undefined,
     days,
     interests,
     pace,
@@ -68,22 +81,28 @@ export async function POST(req: NextRequest) {
     ];
     const genAI = new GoogleGenerativeAI(apiKey);
 
+    const mustVisitBlock =
+      mustVisitPlaces.length > 0
+        ? `\nMUST-INCLUDE PLACES (the traveler explicitly asked for these — every single one MUST appear as a stop in the itinerary, using its exact real name and accurate coordinates):\n${mustVisitPlaces
+            .map((place, i) => `${i + 1}. ${place}`)
+            .join("\n")}\nDistribute them sensibly across the days so the route stays geographically coherent. Fill the remaining slots with other great nearby spots.`
+        : "";
+
     const prompt = `
 You are MapMyEscape, an expert spontaneous travel planner. Generate a realistic, spatially sequenced day-by-day travel itinerary for:
 - Destination / Starting Location: ${sanitizedRequest.startingCity}
-- Base Stay / Hotel: ${sanitizedRequest.hotel || "Centrally located boutique stay"}
 - Duration: ${sanitizedRequest.days} Days
 - Preferred Vibes / Interests: ${sanitizedRequest.interests.join(", ")}
 - Pace: ${sanitizedRequest.pace} (${sanitizedRequest.pace === "relaxed" ? "2 stops per day" : sanitizedRequest.pace === "fast" ? "4-5 stops per day" : "3-4 stops per day"})
 - Primary Transport: ${sanitizedRequest.transport}
-${sanitizedRequest.customNotes ? `- Special Requests: ${sanitizedRequest.customNotes}` : ""}
+${sanitizedRequest.customNotes ? `- Special Requests: ${sanitizedRequest.customNotes}\n` : ""}${mustVisitBlock}
 
 Return valid JSON strictly matching this schema:
 {
   "id": "escape-unique-id",
   "tripTitle": "Short catchy title",
   "startingCity": "${sanitizedRequest.startingCity}",
-  "hotel": "${sanitizedRequest.hotel || ""}",
+  "mustVisitPlaces": ${JSON.stringify(mustVisitPlaces)},
   "destinationSummary": "2-3 sentences overview of the journey vibe",
   "totalDays": ${sanitizedRequest.days},
   "pace": "${sanitizedRequest.pace}",
@@ -123,6 +142,7 @@ CRITICAL RULES:
 3. Every stop must have a category from: temple, cafe, trek, mountain, waterfall, beach, hotel, viewpoint, heritage, market, other.
 4. Output must be a single raw JSON object. Do not wrap it in markdown fences or add commentary.
 5. Every stop must include the keys: id, day, order, timeOfDay, name, category, lat, lng, estimatedDuration, description, insiderTip.
+6. Reflect EVERY entry in "mustVisitPlaces" as an actual stop in "days", keeping the traveler's exact place names. Never silently drop one.
 `;
 
     for (const modelName of candidateModels) {
