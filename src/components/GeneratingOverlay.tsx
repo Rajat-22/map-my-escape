@@ -1,0 +1,185 @@
+"use client";
+
+/**
+ * GeneratingOverlay
+ *
+ * Full-surface grey-out shown while the itinerary request is in flight.
+ *
+ * Deliberately chrome-free: it is just a dimming scrim with the content floated
+ * on it, no card or border, so the planner reads as "dimmed and busy" rather
+ * than being covered by another window.
+ *
+ * Content, centred in the viewport, top → bottom:
+ *   1. a single travel icon that cycles sun → cloud → mountain → tree → beach →
+ *      bird, cross-fading with a soft lift between each
+ *   2. one line of text cycling through the real work being done
+ *   3. a progress bar that fills as the wait elapses
+ *
+ * The message list is personalised: when the traveller added their own places
+ * we name them ("Adding Hadimba Temple…"); otherwise we fall back to describing
+ * the kind of stops the planner is choosing.
+ *
+ * Presentational only: `role="status"` so screen readers announce progress, but
+ * it never traps focus (nothing here is interactive) and every animation is
+ * disabled under `prefers-reduced-motion` (see globals.css).
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  Sun,
+  Cloud,
+  Mountain,
+  Trees,
+  Waves,
+  Bird,
+  type LucideIcon,
+} from "lucide-react";
+
+export interface GeneratingOverlayProps {
+  /** Places the traveller explicitly asked for, if any. */
+  mustVisitPlaces?: string[];
+  /** Resolved start point, used to name the destination in the copy. */
+  startingCity?: string;
+  /** Vibes the traveller picked — drives the fallback wording. */
+  interests?: string[];
+}
+
+/** Cadence of the status text rotation, in ms. */
+const MESSAGE_INTERVAL_MS = 2400;
+
+/** Cadence of the icon rotation, in ms — a touch brisker than the text. */
+const ICON_INTERVAL_MS = 1500;
+
+/**
+ * The icon reel. Each entry is one "scene" the eye moves through, tapping
+ * through the parts of a trip in order: the sun you set off under, the clouds
+ * over the pass, the mountains, the forest, the coast, the birds on the way
+ * home. `tone` tints each one so the change is unmistakable at a glance.
+ */
+const ICONS: Array<{ Icon: LucideIcon; tone: string }> = [
+  { Icon: Sun, tone: "text-amber-300" },
+  { Icon: Cloud, tone: "text-sky-200" },
+  { Icon: Mountain, tone: "text-slate-200" },
+  { Icon: Trees, tone: "text-emerald-400" },
+  { Icon: Waves, tone: "text-cyan-300" },
+  { Icon: Bird, tone: "text-rose-300" },
+];
+
+export default function GeneratingOverlay({
+  mustVisitPlaces = [],
+  startingCity,
+  interests = [],
+}: GeneratingOverlayProps) {
+  const city = startingCity?.trim() || "your destination";
+  const places = useMemo(
+    () => mustVisitPlaces.map((p) => p.trim()).filter(Boolean),
+    [mustVisitPlaces]
+  );
+
+  // Build the rotation. Real, specific work first, generic padding after, so the
+  // loop never runs dry even for a fast request.
+  const messages = useMemo(() => {
+    const list: string[] = ["Mapping your escape route…"];
+
+    if (places.length > 0) {
+      // Name the traveller's own picks so the wait feels like their trip.
+      list.push(
+        ...places.map((place) => `Adding ${place} to your itinerary…`)
+      );
+      list.push("Filling the gaps with nearby hidden gems…");
+    } else {
+      // No places given — describe the kind of stops being chosen instead.
+      list.push(
+        "Scouting the best local spots…",
+        "Hand-picking cafes, temples and viewpoints…",
+        "Filling your days with nearby hidden gems…"
+      );
+    }
+
+    if (interests.length > 0) {
+      list.push(
+        `Matching them to your ${interests.slice(0, 3).join(", ")} vibes…`
+      );
+    }
+
+    list.push(
+      `Drawing the map for ${city}…`,
+      "Sequencing stops so the route flows…",
+      "Estimating travel times and durations…",
+      "Adding insider tips from locals…"
+    );
+
+    return list;
+  }, [places, interests, city]);
+
+  const [index, setIndex] = useState(0);
+  const [iconIndex, setIconIndex] = useState(0);
+
+  // Advance the message on a fixed cadence, looping forever until unmounted.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setIndex((prev) => (prev + 1) % messages.length);
+    }, MESSAGE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [messages.length]);
+
+  // Cycle the icon slightly faster than the text so the eye always has motion,
+  // even while one long message is still on screen.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setIconIndex((prev) => (prev + 1) % ICONS.length);
+    }, ICON_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const { Icon, tone } = ICONS[iconIndex];
+
+  // Portal to <body>. Inside the dialog this overlay would be a child of the
+  // modal's scrolling body, so `fixed` still measured against that scroll box
+  // and pushed the icon up behind the modal's header. At the document root it
+  // is measured against the real viewport and centres where the eye expects.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[60] bg-slate-950/75 backdrop-blur-[3px] animate-in fade-in duration-300"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex h-full w-full items-center justify-center p-6">
+        <div className="w-full max-w-md text-center">
+          {/* ---------- a. Cycling travel icon ----------
+              A plain outline glyph, no badge, no ring, no glow — just the
+              line icon itself. */}
+          <div className="flex justify-center">
+            <span
+              key={iconIndex}
+              className={`gen-icon inline-flex ${tone}`}
+            >
+              <Icon className="h-9 w-9" strokeWidth={1.5} />
+            </span>
+          </div>
+
+          {/* ---------- b. Cycling status line ----------
+              A fixed slot keeps the bar steady no matter how long the
+              current message is. */}
+          <div className="mt-4 flex h-6 items-center justify-center">
+            <p
+              key={index}
+              className="gen-msg px-2 text-center text-sm text-slate-100"
+            >
+              {messages[index]}
+            </p>
+          </div>
+
+          {/* ---------- c. Progress bar ---------- */}
+          <div className="mx-auto mt-5 h-1 w-full max-w-xs overflow-hidden rounded-full bg-slate-800">
+            <div className="gen-bar h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-400 to-emerald-400" />
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
