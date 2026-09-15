@@ -43,6 +43,12 @@ export interface GeneratingOverlayProps {
   startingCity?: string;
   /** Vibes the traveller picked — drives the fallback wording. */
   interests?: string[];
+  /**
+   * "generate" for a first submit, "remix" when reshuffling an existing plan.
+   * A remix gets its own opening line so the traveller reads it as the app
+   * recalculating what they already have, not starting over.
+   */
+  mode?: "generate" | "remix";
 }
 
 /** Cadence of the status text rotation, in ms. */
@@ -70,6 +76,7 @@ export default function GeneratingOverlay({
   mustVisitPlaces = [],
   startingCity,
   interests = [],
+  mode = "generate",
 }: GeneratingOverlayProps) {
   const city = startingCity?.trim() || "your destination";
   const places = useMemo(
@@ -80,7 +87,10 @@ export default function GeneratingOverlay({
   // Build the rotation. Real, specific work first, generic padding after, so the
   // loop never runs dry even for a fast request.
   const messages = useMemo(() => {
-    const list: string[] = ["Mapping your escape route…"];
+    const list: string[] =
+      mode === "remix"
+        ? ["Recalculating your route…", "Reshuffling your days…"]
+        : ["Mapping your escape route…"];
 
     if (places.length > 0) {
       // Name the traveller's own picks so the wait feels like their trip.
@@ -111,7 +121,7 @@ export default function GeneratingOverlay({
     );
 
     return list;
-  }, [places, interests, city]);
+  }, [places, interests, city, mode]);
 
   const [index, setIndex] = useState(0);
   const [iconIndex, setIconIndex] = useState(0);
