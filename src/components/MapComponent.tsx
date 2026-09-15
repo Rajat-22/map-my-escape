@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -11,7 +11,8 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import { ItineraryStop, ItineraryCategory } from "@/types/itinerary";
-import { getCategoryIcon, CATEGORY_COLOR_MAP } from "@/lib/icons";
+import { getCategoryIcon, CATEGORY_COLOR_MAP, getDayColor } from "@/lib/icons";
+import { fetchRoadPathsByDay } from "@/lib/routeService";
 
 // Fix for default Leaflet icon missing in Next.js
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })
@@ -31,17 +32,6 @@ export interface MapComponentProps {
   selectedDay?: number;
   onSelectStop?: (stop: ItineraryStop) => void;
 }
-
-// Distinct route polyline colors for each day
-const DAY_ROUTE_COLORS = [
-  "#38bdf8", // Day 1: Sky 400
-  "#2dd4bf", // Day 2: Teal 400
-  "#fbbf24", // Day 3: Amber 400
-  "#f43f5e", // Day 4: Rose 500
-  "#a855f7", // Day 5: Purple 500
-  "#34d399", // Day 6: Emerald 400
-  "#60a5fa", // Day 7: Blue 400
-];
 
 // SVG icons by category for Leaflet DivIcon
 const CATEGORY_SVG_PATHS: Record<string, string> = {
@@ -139,6 +129,67 @@ function MapViewController({
   return null;
 }
 
+/**
+ * Resolve route geometry for each day of the visible stops.
+ *
+ * Returns two maps so the map can render immediately and then improve:
+ *   straightRoutes — always present, the plain stop-to-stop line
+ *   roadRoutes     — road-following geometry, filled in once OSRM answers
+ *
+ * The straight line is what gets drawn first, so the map is never empty while
+ * waiting on the network, and it stays the fallback if routing fails.
+ */
+function useDayRoutes(visibleStops: ItineraryStop[]) {
+  const straightRoutes = useMemo(() => {
+    const groups: Record<number, Array<[number, number]>> = {};
+    for (const stop of [...visibleStops].sort((a, b) => a.order - b.order)) {
+      if (!groups[stop.day]) groups[stop.day] = [];
+      groups[stop.day].push([stop.lat, stop.lng]);
+    }
+    return groups;
+  }, [visibleStops]);
+
+  const [roadState, setRoadState] = useState<{
+    key: string;
+    routes: Record<number, [number, number][]>;
+  }>({ key: "", routes: {} });
+
+  // Identify the request by its coordinates, not by array identity, so a
+  // re-render that produces an equal stop list does not refetch.
+  const stopsKey = useMemo(
+    () =>
+      visibleStops
+        .map((s) => `${s.id}:${s.day}:${s.order}:${s.lat}:${s.lng}`)
+        .join("|"),
+    [visibleStops]
+  );
+
+  useEffect(() => {
+    if (visibleStops.length < 2) return;
+
+    // Guard against a stale response landing after the stops changed.
+    let cancelled = false;
+
+    fetchRoadPathsByDay(visibleStops).then((paths) => {
+      if (cancelled) return;
+      setRoadState({ key: stopsKey, routes: paths });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // `stopsKey` stands in for visibleStops — same key means same request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopsKey]);
+
+  // Storing the key alongside the routes means geometry from a previous stop
+  // set is never rendered once the key moves on — no setState during render,
+  // and no clearing effect needed.
+  const roadRoutes = roadState.key === stopsKey ? roadState.routes : {};
+
+  return { straightRoutes, roadRoutes };
+}
+
 export default function MapComponent({
   stops = [],
   activeStopId,
@@ -167,15 +218,12 @@ export default function MapComponent({
     [stops, activeStopId]
   );
 
-  // Group coordinates by day for polylines (filtered by selectedDay if specified)
-  const dayRoutes = useMemo(() => {
-    const groups: Record<number, Array<[number, number]>> = {};
-    visibleStops.forEach((stop) => {
-      if (!groups[stop.day]) groups[stop.day] = [];
-      groups[stop.day].push([stop.lat, stop.lng]);
-    });
-    return groups;
-  }, [visibleStops]);
+  // Rendered route geometry per day: {
+  //   straight: the naive stop-to-stop line, drawn immediately and kept as the
+  //             fallback whenever road routing is unavailable
+  //   road:     OSRM's road-following geometry, swapped in once it arrives
+  // }
+  const { straightRoutes, roadRoutes } = useDayRoutes(visibleStops);
 
   return (
     <MapContainer
@@ -195,22 +243,48 @@ export default function MapComponent({
         activeStop={activeStop}
       />
 
-      {/* Render Day Route Polylines */}
-      {Object.entries(dayRoutes).map(([dayNum, coords]) => {
+      {/* Render Day Route Polylines.
+          Solid, Google-Maps style: a wider dark "casing" line underneath the
+          bright one. The casing is what makes a route read cleanly over busy
+          map tiles — without it the colour can disappear into dark patches.
+
+          `coords` is the road-following geometry when OSRM answered, and the
+          plain stop-to-stop line when it did not — so a routing outage
+          degrades to what the map showed before, never to a blank map. */}
+      {Object.entries(straightRoutes).map(([dayNum, straightCoords]) => {
+        const coords = roadRoutes[Number(dayNum)] || straightCoords;
         if (coords.length < 2) return null;
-        const color =
-          DAY_ROUTE_COLORS[(Number(dayNum) - 1) % DAY_ROUTE_COLORS.length];
+        const isRoadRouted = Boolean(roadRoutes[Number(dayNum)]);
+        // Same shared palette the itinerary list uses, so a day's colour on the
+        // map matches that day's colour in the list.
+        const color = getDayColor(Number(dayNum)).hex;
         return (
-          <Polyline
-            key={`route-day-${dayNum}`}
-            positions={coords}
-            pathOptions={{
-              color,
-              weight: 4,
-              opacity: 0.9,
-              dashArray: "6, 8",
-            }}
-          />
+          <React.Fragment key={`route-day-${dayNum}`}>
+            {/* Casing: dark outline drawn slightly wider, beneath the route */}
+            <Polyline
+              positions={coords}
+              pathOptions={{
+                color: "#0b1220",
+                weight: 9,
+                opacity: 0.55,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
+            {/* The route itself — fully solid, no dashes. Slightly translucent
+                until the road geometry arrives, as a cue that this is still
+                the straight-line estimate. */}
+            <Polyline
+              positions={coords}
+              pathOptions={{
+                color,
+                weight: 5,
+                opacity: isRoadRouted ? 1 : 0.75,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
+          </React.Fragment>
         );
       })}
 
