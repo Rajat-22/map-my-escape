@@ -9,12 +9,9 @@ import {
   Navigation,
   Sparkles,
   Luggage,
-  SunMedium,
   CheckCircle2,
   ChevronRight,
   Edit3,
-  Share2,
-  Check,
   Bookmark,
   BookmarkCheck,
   Shuffle,
@@ -22,7 +19,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ItineraryData, ItineraryStop } from "@/types/itinerary";
-import { getCategoryIcon, CATEGORY_COLOR_MAP } from "@/lib/icons";
+import { getCategoryIcon, CATEGORY_COLOR_MAP, getDayColor } from "@/lib/icons";
 import {
   saveItinerary,
   isItinerarySaved,
@@ -58,8 +55,6 @@ export default function ItineraryTimeline({
       ? controlledSelectedDay
       : internalSelectedDay;
 
-  const [copied, setCopied] = useState(false);
-
   // Places the traveler explicitly asked to include, in a non-optional shape
   // so they can be rendered as chips without extra narrowing at each use.
   const mustVisitChips: string[] = itinerary.mustVisitPlaces ?? [];
@@ -85,35 +80,6 @@ export default function ItineraryTimeline({
     } else {
       setInternalSelectedDay(dayNum);
     }
-  };
-
-  const handleShareCopy = () => {
-    const summaryText = [
-      `🗺️ ${itinerary.tripTitle}`,
-      `📍 Starting from: ${itinerary.startingCity}`,
-      ...(mustVisitChips.length > 0
-        ? [`⭐ Must-visit: ${mustVisitChips.join(", ")}`]
-        : []),
-      `⏱️ Duration: ${itinerary.totalDays} Days | Pace: ${itinerary.pace}`,
-      `🚗 Transport: ${itinerary.transport}`,
-      "",
-      ...itinerary.days.map(
-        (day) =>
-          `📌 Day ${day.day} - ${day.title}\n` +
-          day.stops
-            .map(
-              (s) =>
-                `  • [${s.timeOfDay}] ${s.name} (${s.category}) - ${s.estimatedDuration}`,
-            )
-            .join("\n"),
-      ),
-      "",
-      `✨ Created via MapMyEscape`,
-    ].join("\n");
-
-    navigator.clipboard.writeText(summaryText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
   };
 
   // Filter stops by selected day
@@ -174,20 +140,6 @@ export default function ItineraryTimeline({
               </Button>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShareCopy}
-              icon={
-                copied ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <Share2 className="w-3.5 h-3.5 text-slate-400" />
-                )
-              }
-            >
-              {copied ? "Copied!" : "Share"}
-            </Button>
 
             <Button
               variant="secondary"
@@ -224,18 +176,6 @@ export default function ItineraryTimeline({
               <strong className="text-slate-200">{itinerary.transport}</strong>
             </span>
           </div>
-
-          {itinerary.bestSeason && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-              <SunMedium className="w-3.5 h-3.5 text-amber-400" />
-              <span>
-                Season:{" "}
-                <strong className="text-slate-200">
-                  {itinerary.bestSeason}
-                </strong>
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Must-visit places the traveler asked for, echoed back as chips */}
@@ -272,29 +212,41 @@ export default function ItineraryTimeline({
           All Days ({itinerary.totalDays})
         </button>
 
-        {itinerary.days.map((day) => (
-          <button
-            key={day.day}
-            type="button"
-            onClick={() => handleDayChange(day.day)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              selectedDay === day.day
-                ? "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20"
-                : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 hover:border-slate-700"
-            }`}
-          >
-            <span>Day {day.day}</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                selectedDay === day.day
-                  ? "bg-slate-950/30 text-slate-950"
-                  : "bg-slate-800 text-slate-400"
+        {itinerary.days.map((day) => {
+          const dayColor = getDayColor(day.day);
+          const isActive = selectedDay === day.day;
+          return (
+            <button
+              key={day.day}
+              type="button"
+              onClick={() => handleDayChange(day.day)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                isActive
+                  ? dayColor.solid
+                  : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700"
               }`}
             >
-              {day.stops.length}
-            </span>
-          </button>
-        ))}
+              {/* A dot in this day's route colour, so an unselected tab is still
+                  identifiable as the colour of its line on the map. */}
+              {!isActive && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: dayColor.hex }}
+                />
+              )}
+              <span>Day {day.day}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isActive
+                    ? "bg-slate-950/30 text-slate-950"
+                    : "bg-slate-800 text-slate-400"
+                }`}
+              >
+                {day.stops.length}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 3. Chronological Day-by-Day Timeline List */}
@@ -304,7 +256,9 @@ export default function ItineraryTimeline({
             {/* Day Title & Theme Banner */}
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-sky-500/20 border border-sky-400/40 text-sky-300 font-mono text-xs font-bold flex items-center justify-center">
+                <span
+                  className={`w-6 h-6 rounded-lg border font-mono text-xs font-bold flex items-center justify-center ${getDayColor(dayPlan.day).muted}`}
+                >
                   {dayPlan.day}
                 </span>
                 <div>
@@ -319,8 +273,12 @@ export default function ItineraryTimeline({
               </span>
             </div>
 
-            {/* Sequence of Stops for this Day */}
-            <div className="space-y-2.5 relative pl-4 border-l-2 border-slate-800 ml-3">
+            {/* Sequence of Stops for this Day. The left rail is tinted to the
+                day's route colour, so the list and the map line agree. */}
+            <div
+              className="space-y-2.5 relative pl-4 border-l-2 ml-3"
+              style={{ borderLeftColor: getDayColor(dayPlan.day).hex }}
+            >
               {dayPlan.stops.map((stop, idx) => {
                 const isActive = activeStopId === stop.id;
                 const categoryColor =
