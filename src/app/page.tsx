@@ -1,4 +1,4 @@
-"use client";
+﻿﻿"use client";
 
 import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
@@ -43,12 +43,20 @@ export default function Home() {
   // after submit (when `lastSubmittedRequest` and `isGenerating` both flip).
   const [generatingFor, setGeneratingFor] = useState<TripRequest | null>(null);
 
+  // Which flow the overlay is narrating. A remix says "recalculating" instead
+  // of "mapping", so the traveller knows their existing plan is being reshuffled
+  // rather than built from scratch.
+  const [generatingMode, setGeneratingMode] = useState<"generate" | "remix">(
+    "generate"
+  );
+
   const handleStartPlanning = () => {
     setIsPlannerOpen(true);
   };
 
   const handleFormSubmit = async (request: TripRequest) => {
     setIsGenerating(true);
+    setGeneratingMode("generate");
     setGeneratingFor(request);
     setLastSubmittedRequest(request);
     console.log("Submitting Escape Request:", request);
@@ -95,6 +103,13 @@ export default function Home() {
       variationSeed: Date.now(),
     };
 
+    // Show the same generating overlay as a first submit, so a remix reads as
+    // "recalculating" rather than the UI just freezing. `generatingFor` is what
+    // the overlay renders from, so it must be set here too — not only in
+    // handleFormSubmit.
+    setGeneratingMode("remix");
+    setGeneratingFor(variationRequest);
+
     try {
       const res = await fetch("/api/generate-itinerary", {
         method: "POST",
@@ -115,6 +130,7 @@ export default function Home() {
       console.warn("Remix failed:", err);
     } finally {
       setIsRemixing(false);
+      setGeneratingFor(null);
     }
   };
 
@@ -148,13 +164,18 @@ export default function Home() {
         showOkButton={!!currentItinerary && !isModifyingForm}
       >
         {/* `relative` anchors the generating overlay so it greys out the entire
-            planner — form and map — while a request is in flight. */}
+            planner — form and map — while a request is in flight.
+
+            Driven by `generatingFor` rather than `isGenerating`, because a
+            remix sets the former but not the latter — and the overlay needs the
+            request in both flows so it can name the traveller's own places. */}
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {isGenerating && (
+          {generatingFor && (
             <GeneratingOverlay
-              mustVisitPlaces={generatingFor?.mustVisitPlaces}
-              startingCity={generatingFor?.startingCity}
-              interests={generatingFor?.interests}
+              mustVisitPlaces={generatingFor.mustVisitPlaces}
+              startingCity={generatingFor.startingCity}
+              interests={generatingFor.interests}
+              mode={generatingMode}
             />
           )}
           {/* Left Column: Form / Timeline */}
