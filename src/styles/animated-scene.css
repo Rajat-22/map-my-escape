@@ -1,0 +1,318 @@
+/**
+ * AnimatedScene
+ *
+ * Layered atmosphere over the hero photograph: drifting fog banks, a passing
+ * cloud shadow, a breathing sun flare and floating mist.
+ * Owner: src/components/AnimatedScene.tsx
+ *
+ * Layers (back → front):
+ *   1. .scene-photo      real photograph, slow Ken Burns drift
+ *   2. .scene-grade      warm sunrise colour wash
+ *   3. .scene-fog  ×3    parallax fog banks
+ *   4. .scene-cloudshadow large soft shadow crossing slowly
+ *   5. .scene-flare      sun bloom that breathes
+ *   6. .mist             fine particles rising
+ *   7. .scene-vignette   readability overlay
+ */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* contain the `fill` photo and hold the frame while it decodes */
+  isolation: isolate;
+  background: #0a1220;
+}
+
+/* ---- 1. The photograph ---- */
+/* `fill` makes next/image absolutely-positioned; the -3% bleed plus the
+   slightly oversized box means the slow drift never reveals an edge. */
+.scene-photo {
+  object-fit: cover;
+  object-position: center 42%;
+  /* Slow, tiny zoom+pan so the still image feels alive without looking cheap */
+  animation: scene-kenburns 46s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* ---- 2. Sunrise colour grade ---- */
+.scene-grade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(14, 30, 58, 0.55) 0%,
+      rgba(24, 52, 88, 0.22) 34%,
+      rgba(120, 82, 70, 0.14) 62%,
+      rgba(8, 18, 34, 0.62) 100%
+    ),
+    radial-gradient(
+      ellipse 60% 42% at 62% 58%,
+      rgba(255, 176, 102, 0.3) 0%,
+      rgba(255, 140, 90, 0.12) 40%,
+      rgba(255, 140, 90, 0) 72%
+    );
+  mix-blend-mode: soft-light;
+}
+
+/* ---- 3. Drifting fog banks (parallax) ---- */
+.scene-fog {
+  position: absolute;
+  left: -40%;
+  width: 180%;
+  height: 42%;
+  /* Soft, uneven cloud texture — layered blurs read as vapour, not a band */
+  background:
+    radial-gradient(
+      ellipse 28% 60% at 12% 60%,
+      rgba(226, 238, 250, 0.5) 0%,
+      rgba(226, 238, 250, 0) 70%
+    ),
+    radial-gradient(
+      ellipse 34% 70% at 38% 48%,
+      rgba(210, 228, 245, 0.42) 0%,
+      rgba(210, 228, 245, 0) 72%
+    ),
+    radial-gradient(
+      ellipse 26% 54% at 64% 62%,
+      rgba(232, 242, 252, 0.46) 0%,
+      rgba(232, 242, 252, 0) 70%
+    ),
+    radial-gradient(
+      ellipse 32% 64% at 88% 52%,
+      rgba(214, 230, 246, 0.4) 0%,
+      rgba(214, 230, 246, 0) 72%
+    );
+  filter: blur(22px);
+  will-change: transform;
+}
+
+.scene-fog-1 {
+  bottom: 26%;
+  opacity: 0.55;
+  animation: scene-fog-drift 62s linear infinite;
+}
+
+.scene-fog-2 {
+  bottom: 16%;
+  height: 34%;
+  opacity: 0.42;
+  filter: blur(30px);
+  animation: scene-fog-drift 96s linear infinite reverse;
+}
+
+.scene-fog-3 {
+  bottom: 38%;
+  height: 26%;
+  opacity: 0.3;
+  filter: blur(36px);
+  animation: scene-fog-drift 128s linear infinite;
+}
+
+/* ---- 4. Cloud shadow crossing the landscape ---- */
+.scene-cloudshadow {
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(4, 10, 22, 0) 0%,
+    rgba(4, 10, 22, 0.34) 50%,
+    rgba(4, 10, 22, 0) 100%
+  );
+  filter: blur(40px);
+  animation: scene-cloudshadow-sweep 84s linear infinite;
+  will-change: transform;
+}
+
+/* ---- 5. Sun flare breathing on the horizon ---- */
+.scene-flare {
+  position: absolute;
+  right: 12%;
+  top: 40%;
+  width: 460px;
+  height: 460px;
+  transform: translate(50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 236, 196, 0.75) 0%,
+    rgba(255, 196, 122, 0.42) 22%,
+    rgba(255, 150, 96, 0.16) 46%,
+    rgba(255, 140, 90, 0) 70%
+  );
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  animation: scene-flare-breathe 12s ease-in-out infinite;
+}
+
+/* ---- 6. Rising mist particles ---- */
+.scene-mist {
+  position: absolute;
+  inset: 0;
+}
+
+.mist {
+  position: absolute;
+  bottom: -4%;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(235, 245, 255, 0.72);
+  filter: blur(1px);
+  animation: scene-mist-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Per-particle timing and size, so the drift never looks like a grid. */
+.mist-1 {
+  left: 6%;
+  animation-duration: 26s;
+  animation-delay: -3s;
+}
+.mist-2 {
+  left: 18%;
+  animation-duration: 34s;
+  animation-delay: -12s;
+  width: 2px;
+  height: 2px;
+}
+.mist-3 {
+  left: 29%;
+  animation-duration: 22s;
+  animation-delay: -7s;
+}
+.mist-4 {
+  left: 41%;
+  animation-duration: 38s;
+  animation-delay: -21s;
+  width: 4px;
+  height: 4px;
+}
+.mist-5 {
+  left: 53%;
+  animation-duration: 29s;
+  animation-delay: -15s;
+}
+.mist-6 {
+  left: 66%;
+  animation-duration: 42s;
+  animation-delay: -30s;
+  width: 2px;
+  height: 2px;
+}
+.mist-7 {
+  left: 78%;
+  animation-duration: 31s;
+  animation-delay: -9s;
+}
+.mist-8 {
+  left: 88%;
+  animation-duration: 36s;
+  animation-delay: -25s;
+}
+
+/* ---- 7. Readability overlay ---- */
+.scene-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 68% 54% at 50% 44%,
+      rgba(2, 6, 23, 0.62) 0%,
+      rgba(2, 6, 23, 0.28) 46%,
+      rgba(2, 6, 23, 0) 78%
+    ),
+    linear-gradient(
+      to right,
+      rgba(2, 6, 23, 0.5),
+      rgba(2, 6, 23, 0) 22%,
+      rgba(2, 6, 23, 0) 78%,
+      rgba(2, 6, 23, 0.5)
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(2, 6, 23, 0.4) 0%,
+      rgba(2, 6, 23, 0) 30%,
+      rgba(2, 6, 23, 0) 70%,
+      rgba(2, 6, 23, 0.55) 100%
+    );
+}
+
+/* ---- Keyframes ---- */
+
+@keyframes scene-kenburns {
+  0% {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.09) translate3d(-1.4%, -1%, 0);
+  }
+}
+
+@keyframes scene-fog-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(22%, 0, 0);
+  }
+}
+
+@keyframes scene-cloudshadow-sweep {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(270%, 0, 0);
+  }
+}
+
+@keyframes scene-flare-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translate(50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(50%, -50%) scale(1.07);
+  }
+}
+
+@keyframes scene-mist-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(3vw, -78vh, 0);
+    opacity: 0;
+  }
+}
+
+/* Respect reduced-motion: hold a still, composed frame. */
+@media (prefers-reduced-motion: reduce) {
+  .scene-photo,
+  .scene-fog,
+  .scene-cloudshadow,
+  .scene-flare,
+  .mist {
+    animation: none !important;
+  }
+
+  .mist {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,17 @@
+/**
+ * Base
+ *
+ * Global design tokens and element defaults. This is the only stylesheet that
+ * is genuinely global — everything else is scoped to a component and imported
+ * by that component.
+ */
+
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
