@@ -23,6 +23,7 @@
  */
 
 import Image from "next/image";
+import "@/styles/animated-scene.css";
 
 // Real high-resolution sunrise landscape (mountains, lake, forest, mist),
 // served from the Unsplash CDN at an explicit width/quality.

@@ -13,6 +13,7 @@ import L from "leaflet";
 import { ItineraryStop, ItineraryCategory } from "@/types/itinerary";
 import { getCategoryIcon, CATEGORY_COLOR_MAP, getDayColor } from "@/lib/icons";
 import { fetchRoadPathsByDay } from "@/lib/routeService";
+import "@/styles/leaflet-map.css";
 
 // Fix for default Leaflet icon missing in Next.js
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })

@@ -26,6 +26,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import "@/styles/generating-overlay.css";
 import {
   Sun,
   Cloud,

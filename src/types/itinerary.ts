@@ -49,8 +49,6 @@ export interface ItineraryData {
   stops: ItineraryStop[];
   highlights: string[];
   packingTips: string[];
-  bestSeason?: string;
-  isFallback?: boolean;
 }
 
 export interface TripRequest {
