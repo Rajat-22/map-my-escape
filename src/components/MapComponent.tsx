@@ -10,6 +10,7 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
+import { Maximize2 } from "lucide-react";
 import { ItineraryStop, ItineraryCategory } from "@/types/itinerary";
 import { getCategoryIcon, CATEGORY_COLOR_MAP, getDayColor } from "@/lib/icons";
 import { fetchRoadPathsByDay } from "@/lib/routeService";
@@ -89,6 +90,76 @@ function createCategoryMarkerIcon(
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2 - 4],
   });
+}
+
+// Map controls stacked in the top-right: zoom in, zoom out, then a fit-to-view
+// button directly beneath them. Rendered inside the MapContainer so they can
+// reach the map instance through useMap(); Leaflet's built-in zoom control is
+// turned off (`zoomControl={false}`) so these are the only zoom buttons.
+function MapControls({ stops }: { stops: ItineraryStop[] }) {
+  const map = useMap();
+
+  const handleFit = () => {
+    if (stops.length > 0) {
+      const bounds = L.latLngBounds(
+        stops.map((s) => [s.lat, s.lng] as [number, number])
+      );
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    } else {
+      map.setView([28.6139, 77.209], 13);
+    }
+  };
+
+  const buttonClass =
+    "flex h-8 w-8 items-center justify-center border-slate-700 bg-slate-900/95 text-slate-200 text-lg font-bold leading-none transition-colors hover:bg-slate-800 hover:text-sky-300 cursor-pointer";
+
+  // Pressing a button normally focuses it, and the browser then scrolls the
+  // nearest scrollable ancestor to bring it into view — which drags the whole
+  // planner (form included) around. Preventing the default focus on mouse down
+  // keeps the viewport exactly where the traveller left it.
+  const onMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+  };
+
+  return (
+    <div className="leaflet-top leaflet-right">
+      <div
+        className="flex flex-col overflow-hidden rounded-md border-slate-700 shadow-lg"
+        style={{ pointerEvents: "auto" }}
+      >
+        <button
+          type="button"
+          onMouseDown={onMouseDown}
+          onClick={() => map.zoomIn()}
+          title="Zoom in"
+          aria-label="Zoom in"
+          className={`${buttonClass} border-b`}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          onMouseDown={onMouseDown}
+          onClick={() => map.zoomOut()}
+          title="Zoom out"
+          aria-label="Zoom out"
+          className={`${buttonClass} border-b`}
+        >
+          &minus;
+        </button>
+        <button
+          type="button"
+          onMouseDown={onMouseDown}
+          onClick={handleFit}
+          title="Fit route in view"
+          aria-label="Fit route in view"
+          className={buttonClass}
+        >
+          <Maximize2 className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // Controller component to smoothly fly and fit map bounds to stops or active stop
@@ -231,6 +302,7 @@ export default function MapComponent({
       center={centerPosition}
       zoom={13}
       scrollWheelZoom={true}
+      zoomControl={false}
       className="h-full w-full"
     >
       <TileLayer
@@ -243,6 +315,11 @@ export default function MapComponent({
         center={centerPosition}
         activeStop={activeStop}
       />
+
+      {/* Custom zoom + / - and fit-to-view, stacked together in the top-right.
+          Fit snaps the view back to the whole route after panning or zooming
+          away from it, and fits the visible (day-filtered) stops. */}
+      <MapControls stops={visibleStops} />
 
       {/* Render Day Route Polylines.
           Solid, Google-Maps style: a wider dark "casing" line underneath the
