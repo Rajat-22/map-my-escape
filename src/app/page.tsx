@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import ItineraryForm from "@/components/ItineraryForm";
 import ItineraryTimeline from "@/components/ItineraryTimeline";
 import GeneratingOverlay from "@/components/GeneratingOverlay";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { TripRequest, ItineraryData, ItineraryStop } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
@@ -50,6 +51,11 @@ export default function Home() {
     "generate"
   );
 
+  // Shown when generation fails outright. There is deliberately NO fallback
+  // itinerary: a template plan presented as a real route would be worse than
+  // an honest error, so the traveller is told to try again instead.
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   const handleStartPlanning = () => {
     setIsPlannerOpen(true);
   };
@@ -59,26 +65,40 @@ export default function Home() {
     setGeneratingMode("generate");
     setGeneratingFor(request);
     setLastSubmittedRequest(request);
-    console.log("Submitting Escape Request:", request);
+    setGenerationError(null);
+    const startedAt = Date.now();
+
     try {
       const res = await fetch("/api/generate-itinerary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.itinerary) {
-          setCurrentItinerary(data.itinerary);
-          setIsModifyingForm(false);
-          setSelectedDay(0);
-          if (data.itinerary.stops?.length > 0) {
-            setActiveStopId(data.itinerary.stops[0].id);
-          }
+
+      const data = await res.json().catch(() => null);
+      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(2);
+
+      if (res.ok && data?.itinerary) {
+        console.log(`[itinerary] generated in ${elapsed}s (${data.source})`);
+        setCurrentItinerary(data.itinerary);
+        setIsModifyingForm(false);
+        setSelectedDay(0);
+        if (data.itinerary.stops?.length > 0) {
+          setActiveStopId(data.itinerary.stops[0].id);
         }
+      } else {
+        // No fallback: surface the server's message (or a sensible default).
+        console.warn(`[itinerary] failed after ${elapsed}s:`, data?.error);
+        setGenerationError(
+          data?.error ||
+            "We couldn't build your itinerary. Please try again in a moment.",
+        );
       }
     } catch (err) {
-      console.warn("Itinerary API not yet fully connected:", err);
+      console.warn("Itinerary request failed:", err);
+      setGenerationError(
+        "We couldn't reach the itinerary service. Check your connection and try again.",
+      );
     } finally {
       setIsGenerating(false);
       setGeneratingFor(null);
@@ -109,6 +129,8 @@ export default function Home() {
     // handleFormSubmit.
     setGeneratingMode("remix");
     setGeneratingFor(variationRequest);
+    setGenerationError(null);
+    const startedAt = Date.now();
 
     try {
       const res = await fetch("/api/generate-itinerary", {
@@ -116,22 +138,55 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(variationRequest),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.itinerary) {
-          setCurrentItinerary(data.itinerary);
-          setSelectedDay(0);
-          if (data.itinerary.stops?.length > 0) {
-            setActiveStopId(data.itinerary.stops[0].id);
-          }
+
+      const data = await res.json().catch(() => null);
+      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(2);
+
+      if (res.ok && data?.itinerary) {
+        console.log(`[itinerary] remix generated in ${elapsed}s (${data.source})`);
+        setCurrentItinerary(data.itinerary);
+        setSelectedDay(0);
+        if (data.itinerary.stops?.length > 0) {
+          setActiveStopId(data.itinerary.stops[0].id);
         }
+      } else {
+        console.warn(`[itinerary] remix failed after ${elapsed}s:`, data?.error);
+        setGenerationError(
+          data?.error ||
+            "We couldn't rebuild your itinerary. Please try again in a moment.",
+        );
       }
     } catch (err) {
-      console.warn("Remix failed:", err);
+      console.warn("Remix request failed:", err);
+      setGenerationError(
+        "We couldn't reach the itinerary service. Check your connection and try again.",
+      );
     } finally {
       setIsRemixing(false);
       setGeneratingFor(null);
     }
+  };
+
+  // Stepping back from the modify form without changing anything: show the
+  // itinerary that is still loaded, exactly as it was.
+  const handleCancelModify = () => {
+    if (!currentItinerary) return;
+    setIsModifyingForm(false);
+    setFormInitialValues(null);
+    setSelectedDay(0);
+    if (currentItinerary.stops?.length > 0) {
+      setActiveStopId(currentItinerary.stops[0].id);
+    }
+  };
+
+  // Resetting the form means the traveller is starting over: drop the previous
+  // itinerary so the map stops plotting a route that no longer matches the form.
+  const handleFormReset = () => {
+    setCurrentItinerary(null);
+    setLastSubmittedRequest(null);
+    setActiveStopId(null);
+    setSelectedDay(0);
+    setGenerationError(null);
   };
 
   const handleSelectSavedItinerary = (saved: ItineraryData) => {
@@ -147,10 +202,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <Navbar
-        onSelectSavedItinerary={handleSelectSavedItinerary}
-        onOpenPlanner={handleStartPlanning}
-      />
+      <Navbar onSelectSavedItinerary={handleSelectSavedItinerary} />
 
       {/* Brand Header */}
       <Header onStartPlanning={handleStartPlanning} />
@@ -159,9 +211,21 @@ export default function Home() {
       <ModalDialog
         isOpen={isPlannerOpen}
         onClose={handleClosePlanner}
-        title="AI Escape Route Planner"
+        title="Escape Route Planner"
         subtitle="Plan your trip and explore your itinerary without leaving this dialog."
         showOkButton={!!currentItinerary && !isModifyingForm}
+        footerLeft={
+          isModifyingForm && currentItinerary ? (
+            <button
+              type="button"
+              onClick={handleCancelModify}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700/80 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-sky-400" />
+              Back to Itinerary
+            </button>
+          ) : undefined
+        }
       >
         {/* `relative` anchors the generating overlay so it greys out the entire
             planner — form and map — while a request is in flight.
@@ -169,6 +233,32 @@ export default function Home() {
             Driven by `generatingFor` rather than `isGenerating`, because a
             remix sets the former but not the latter — and the overlay needs the
             request in both flows so it can name the traveller's own places. */}
+        <div className="relative">
+          {/* Generation failed. There is no fallback plan, so tell the traveller
+              plainly and let them retry rather than showing invented data. */}
+          {generationError && !generatingFor && (
+            <div
+              role="alert"
+              className="mb-5 flex items-start gap-3 flex-wrap rounded-xl border-rose-500/40 bg-rose-500/10 px-4 py-3"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-rose-200">
+                  Couldn&apos;t generate your itinerary
+                </p>
+                <p className="mt-0.5 text-xs text-rose-200/80">{generationError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGenerationError(null)}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/20 hover:text-white cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {generatingFor && (
             <GeneratingOverlay
@@ -210,6 +300,7 @@ export default function Home() {
                 }
                 initialValues={formInitialValues}
                 onSubmit={handleFormSubmit}
+                onReset={handleFormReset}
                 isLoading={isGenerating}
               />
             )}
@@ -232,7 +323,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
         <p>
-          MapMyEscape &copy; {new Date().getFullYear()} &mdash; Dynamic AI
+          MapMyEscape &copy; {new Date().getFullYear()} &mdash; Dynamic
           Travel Routes & Real-Time Geospatial Visualization
         </p>
       </footer>
