@@ -1,11 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TripRequest, ItineraryData, ItineraryStop, DayPlan } from "@/types/itinerary";
-import { generateFallbackItinerary } from "@/lib/destinationData";
 
 // Gemini can take 30-45s on a full itinerary prompt, so allow enough time
 // for the route handler to finish before the platform cancels it.
 export const maxDuration = 60;
+
+/**
+ * Reconcile the model's corrected must-visit names against what was requested.
+ *
+ * The model is the only component that knows real place names anywhere in the
+ * world, so it is asked to correct the traveller's spellings. But it can also
+ * misbehave: return a shorter list, reorder it, duplicate entries or invent a
+ * name. These chips are shown back to the traveller, so a wrong list is worse
+ * than a misspelled one.
+ *
+ * So the model's answer is only trusted when it is a one-to-one match:
+ * same length, no empty entries, no duplicates. Anything else falls back to the
+ * requested list, which is always safe — it is literally what the user typed.
+ */
+function reconcileMustVisitPlaces(
+  requested: string[],
+  corrected: unknown,
+): string[] | undefined {
+  if (requested.length === 0) return undefined;
+
+  if (!Array.isArray(corrected) || corrected.length !== requested.length) {
+    return requested;
+  }
+
+  const cleaned = corrected
+    .filter((name): name is string => typeof name === "string")
+    .map((name) => name.trim());
+
+  if (cleaned.length !== requested.length || cleaned.some((name) => !name)) {
+    return requested;
+  }
+
+  // Duplicates mean the model collapsed two places into one name.
+  const unique = new Set(cleaned.map((name) => name.toLowerCase()));
+  if (unique.size !== cleaned.length) return requested;
+
+  return cleaned;
+}
 
 export async function GET() {
   return NextResponse.json({
@@ -17,6 +54,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Total time for the whole request, logged on both success and failure so
+  // slow responses are visible in the server log.
+  const requestStartedAt = Date.now();
+
   let tripRequest: TripRequest;
   try {
     tripRequest = await req.json();
@@ -43,15 +84,19 @@ export async function POST(req: NextRequest) {
       : ["cafe", "viewpoint", "trek"];
   const transport = tripRequest.transport || "Scooter & Local Cab";
 
-  // User-supplied must-visit spots: trimmed, de-duplicated, capped so the
-  // prompt stays within a sane size.
+  // User-supplied must-visit spots, corrected for spelling, de-duplicated and
+  // capped so the prompt stays within a sane size.
+  //
+  // Correction happens HERE, at the edge, because the corrected names are what
+  // the AI is asked to geocode and what gets stored on the itinerary — so the
+  // form, the overlay and the saved plan all show the same official spelling.
   const mustVisitPlaces = Array.isArray(tripRequest.mustVisitPlaces)
     ? [
         ...new Set(
           tripRequest.mustVisitPlaces
             .filter((place): place is string => typeof place === "string")
             .map((place) => place.trim())
-            .filter(Boolean)
+            .filter(Boolean),
         ),
       ].slice(0, 20)
     : [];
@@ -83,9 +128,9 @@ export async function POST(req: NextRequest) {
 
     const mustVisitBlock =
       mustVisitPlaces.length > 0
-        ? `\nMUST-INCLUDE PLACES (the traveler explicitly asked for these — every single one MUST appear as a stop in the itinerary, using its exact real name and accurate coordinates):\n${mustVisitPlaces
+        ? `\nMUST-INCLUDE PLACES the traveler typed (their spelling may be wrong — see rule 8):\n${mustVisitPlaces
             .map((place, i) => `${i + 1}. ${place}`)
-            .join("\n")}\nDistribute them sensibly across the days so the route stays geographically coherent. Fill the remaining slots with other great nearby spots.`
+            .join("\n")}\nEvery one MUST appear as a stop in the itinerary. Distribute them sensibly across the days so the route stays geographically coherent, and fill the remaining slots with other great nearby spots.`
         : "";
 
     const prompt = `
@@ -109,7 +154,6 @@ Return valid JSON strictly matching this schema:
   "transport": "${sanitizedRequest.transport}",
   "highlights": ["3 key journey highlights"],
   "packingTips": ["3 essential practical packing items"],
-  "bestSeason": "e.g. October to March",
   "days": [
     {
       "day": 1,
@@ -142,17 +186,41 @@ CRITICAL RULES:
 3. Every stop must have a category from: temple, cafe, trek, mountain, waterfall, beach, hotel, viewpoint, heritage, market, other.
 4. Output must be a single raw JSON object. Do not wrap it in markdown fences or add commentary.
 5. Every stop must include the keys: id, day, order, timeOfDay, name, category, lat, lng, estimatedDuration, description, insiderTip.
-6. Reflect EVERY entry in "mustVisitPlaces" as an actual stop in "days", keeping the traveler's exact place names. Never silently drop one.
+6. Reflect EVERY entry in "mustVisitPlaces" as an actual stop in "days". Never silently drop one.
+7. "mustVisitPlaces" in your output MUST be the SAME list you were given above, in the same order, but with each name corrected to the real, properly-spelled and properly-capitalised name of that place near ${sanitizedRequest.startingCity}. Fix typos, wrong casing and phonetic spellings (e.g. "ram jhuls" -> "Ram Jhula", "neelkanth mahadev" -> "Neelkanth Mahadev Temple"). This list is shown back to the traveler, so it must look right. If a name is already correct, or you cannot confidently identify the place, return it unchanged rather than inventing a name.
+8. Use those same corrected names for the corresponding stops in "days", so the itinerary and the list agree.
 `;
+
+    // Total budget for the WHOLE request, across every model and retry.
+    //
+    // A per-attempt timeout alone is not enough: with 3 models x 2 attempts it
+    // allowed 6 x 60s of waiting before giving up, which is why a hard failure
+    // took ~88s instead of the intended minute. Every attempt now also has to
+    // fit inside this deadline, so the traveller is told within ~1 minute.
+    const totalBudgetMs = Number(process.env.GEMINI_TOTAL_BUDGET_MS) || 60000;
+    const deadlineAt = requestStartedAt + totalBudgetMs;
 
     for (const modelName of candidateModels) {
       // The newest Gemini models emit reasoning tokens, so a full itinerary
-      // prompt regularly takes 15-40s. The old 15s timeout aborted every call
-      // and silently fell back to the generator.
-      const attemptTimeout = Number(process.env.GEMINI_TIMEOUT_MS) || 45000;
+      // prompt regularly takes 15-40s.
+      const configuredTimeout = Number(process.env.GEMINI_TIMEOUT_MS) || 60000;
 
       for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
+      const startedAt = Date.now();
+
+      // Never let a single attempt run past the shared deadline.
+      const remainingMs = deadlineAt - startedAt;
+      if (remainingMs <= 1000) {
+        console.warn(
+          `[generate-itinerary] budget of ${(totalBudgetMs / 1000).toFixed(
+            0,
+          )}s exhausted; not starting ${modelName} attempt ${attempt}.`,
+        );
+        break;
+      }
+      const attemptTimeout = Math.min(configuredTimeout, remainingMs);
+
+      try {
           const model = genAI.getGenerativeModel(
             {
               model: modelName,
@@ -210,12 +278,26 @@ CRITICAL RULES:
             const itinerary: ItineraryData = {
               ...parsedData,
               stops: flatStops,
-              isFallback: false,
+              // The model is asked to correct the traveller's spellings; keep
+              // the request's own list unless the model's answer is a
+              // trustworthy one-to-one match for it.
+              mustVisitPlaces: reconcileMustVisitPlaces(
+                mustVisitPlaces,
+                parsedData.mustVisitPlaces,
+              ),
             };
+
+            const elapsedMs = Date.now() - startedAt;
+            console.log(
+              `[generate-itinerary] OK via ${modelName} (attempt ${attempt}) in ${(
+                elapsedMs / 1000
+              ).toFixed(2)}s — ${flatStops.length} stops`,
+            );
 
             return NextResponse.json({
               success: true,
               source: `gemini-ai (${modelName})`,
+              elapsedMs,
               itinerary,
             });
           }
@@ -224,8 +306,11 @@ CRITICAL RULES:
         } catch (aiError) {
           const message =
             aiError instanceof Error ? aiError.message : String(aiError);
+          const elapsedMs = Date.now() - startedAt;
           console.warn(
-            `[generate-itinerary] ${modelName} attempt ${attempt}/2 failed: ${message}`
+            `[generate-itinerary] ${modelName} attempt ${attempt}/2 failed after ${(
+              elapsedMs / 1000
+            ).toFixed(2)}s: ${message}`
           );
 
           // Retry once on transient/timeout failures; do not retry bad output.
@@ -234,21 +319,43 @@ CRITICAL RULES:
               message
             );
           if (!isTransient || attempt === 2) break;
+
+          // Only wait if there is still enough of the budget left to be useful.
+          if (deadlineAt - Date.now() < 3000) break;
           await new Promise((resolve) => setTimeout(resolve, 800));
         }
       }
+
+      // Stop trying further models once the shared deadline has passed.
+      if (Date.now() >= deadlineAt) break;
     }
   }
 
-  // Fallback engine: generate authentic, accurately-geocoded itinerary
-  const fallbackItinerary = generateFallbackItinerary(sanitizedRequest);
-  return NextResponse.json({
-    success: true,
-    source: isKeyConfigured ? "fallback-error-recovery" : "intelligent-generator",
-    message: isKeyConfigured
-      ? "AI fallback activated."
-      : "Demo generator active. Provide GEMINI_API_KEY in .env.local to enable live Gemini AI queries.",
-    itinerary: fallbackItinerary,
-  });
+  // Every model and retry has now been exhausted.
+  //
+  // This used to return a generated fallback itinerary. It no longer does:
+  // that plan was template data ("Historic Heritage Landmark", "Artisanal
+  // Coffee & Roastery") presented as if it were a real, researched route for
+  // the traveller's destination. Showing plausible-looking wrong data is worse
+  // than showing nothing, so the request now fails honestly and the UI tells
+  // the traveller to try again.
+  const elapsedMs = Date.now() - requestStartedAt;
+  console.error(
+    `[generate-itinerary] FAILED after ${(elapsedMs / 1000).toFixed(2)}s — ` +
+      (isKeyConfigured
+        ? "all Gemini models exhausted."
+        : "GEMINI_API_KEY is not configured."),
+  );
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: isKeyConfigured
+        ? "We couldn't finish building your itinerary in time. Please try again."
+        : "Itinerary generation is not configured on this server.",
+      elapsedMs,
+    },
+    { status: isKeyConfigured ? 504 : 503 },
+  );
 }
 
