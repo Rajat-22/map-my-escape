@@ -3,8 +3,8 @@
 import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import ModalDialog from "@/components/ModalDialog";
-import Navbar from "@/components/Navbar";
 import Header from "@/components/Header";
+import HomePage from "@/components/HomePage";
 import ItineraryForm from "@/components/ItineraryForm";
 import ItineraryTimeline from "@/components/ItineraryTimeline";
 import GeneratingOverlay from "@/components/GeneratingOverlay";
@@ -197,10 +197,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <Navbar onSelectSavedItinerary={handleSelectSavedItinerary} />
+      {/* Top navigation bar with saved escapes */}
+      <Header onSelectSavedItinerary={handleSelectSavedItinerary} />
 
-      {/* Brand Header */}
-      <Header onStartPlanning={handleStartPlanning} />
+      {/* Landing page hero + how-it-works */}
+      <HomePage onStartPlanning={handleStartPlanning} />
 
       {/* The planner exists only inside the dialog, never below the landing page. */}
       <ModalDialog
