@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Compass, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
-import siteContent from "@/data/siteContent.json";
+import { localization, t } from "@/lib/localization";
 import { ItineraryData } from "@/types/itinerary";
 import {
   getSavedItineraries,
@@ -38,7 +38,7 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
             <Compass className="h-6 w-6 animate-pulse" />
           </div>
           <span className="text-xl font-bold tracking-tight text-white">
-            {siteContent.brand.name}
+            {localization.brand.name}
           </span>
         </div>
 
@@ -51,7 +51,7 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
               className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Bookmark className="w-3.5 h-3.5 text-teal-400" />
-              <span>Saved</span>
+              <span>{localization.common.saved}</span>
               {savedEscapes.length > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-mono text-[10px] border border-teal-500/30 font-bold">
                   {savedEscapes.length}
@@ -65,7 +65,11 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-1.5 font-bold text-sm text-white">
                     <Bookmark className="w-4 h-4 text-teal-400" />
-                    <span>Saved Escapes ({savedEscapes.length})</span>
+                    <span>
+                      {t(localization.navbar.savedEscapesTitle, {
+                        count: savedEscapes.length,
+                      })}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -79,9 +83,9 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
                 <div className="mt-3 max-h-72 overflow-y-auto space-y-2 scrollbar-none">
                   {savedEscapes.length === 0 ? (
                     <div className="py-6 text-center text-xs text-slate-400">
-                      <p>No saved itineraries yet.</p>
+                      <p>{localization.navbar.emptyTitle}</p>
                       <p className="text-[11px] text-slate-500 mt-1">
-                        Click &quot;Save Escape&quot; on any generated route to revisit it here.
+                        {localization.navbar.emptyHint}
                       </p>
                     </div>
                   ) : (
@@ -99,14 +103,18 @@ export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
                             {item.tripTitle}
                           </h4>
                           <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                            {item.startingCity} &bull; {item.totalDays} Days &bull; {item.stops.length} Stops
+                            {t(localization.navbar.itemMeta, {
+                              startingCity: item.startingCity,
+                              days: item.totalDays,
+                              stops: item.stops.length,
+                            })}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
-                            title="Remove saved escape"
+                            title={localization.navbar.removeSavedAria}
                             onClick={(e) => handleDelete(e, item.id)}
                             className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                           >

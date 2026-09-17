@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { localization, t } from "@/lib/localization";
 import { ItineraryData, ItineraryStop } from "@/types/itinerary";
 import { getCategoryIcon, CATEGORY_COLOR_MAP, getDayColor } from "@/lib/icons";
 import {
@@ -113,7 +114,7 @@ export default function ItineraryTimeline({
               }
               className={isSaved ? "border-teal-500/40 bg-teal-950/20 text-teal-300" : ""}
             >
-              {isSaved ? "Saved" : "Save Escape"}
+              {isSaved ? localization.common.saved : localization.timeline.saveEscape}
             </Button>
 
             {onRemixTrip && (
@@ -125,7 +126,7 @@ export default function ItineraryTimeline({
                 icon={<Shuffle className="w-3.5 h-3.5 text-amber-400" />}
                 className="hover:border-amber-500/40"
               >
-                Remix
+                {localization.timeline.remix}
               </Button>
             )}
 
@@ -136,7 +137,7 @@ export default function ItineraryTimeline({
               onClick={onModifyTrip}
               icon={<Edit3 className="w-3.5 h-3.5 text-sky-400" />}
             >
-              Modify
+              {localization.timeline.modify}
             </Button>
           </div>
         </div>
@@ -151,7 +152,7 @@ export default function ItineraryTimeline({
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
             <Compass className="w-3.5 h-3.5 text-sky-400" />
             <span>
-              Pace:{" "}
+              {localization.timeline.pacePrefix}{" "}
               <strong className="text-slate-200 capitalize">
                 {itinerary.pace}
               </strong>
@@ -161,7 +162,7 @@ export default function ItineraryTimeline({
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
             <Navigation className="w-3.5 h-3.5 text-teal-400" />
             <span>
-              Transport:{" "}
+              {localization.timeline.transportPrefix}{" "}
               <strong className="text-slate-200">{itinerary.transport}</strong>
             </span>
           </div>
@@ -172,7 +173,7 @@ export default function ItineraryTimeline({
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-300 shrink-0">
               <Sparkles className="w-3.5 h-3.5" />
-              Your must-visits
+              {localization.timeline.mustVisitsLabel}
             </span>
             {mustVisitChips.map((place) => (
               <span
@@ -198,7 +199,7 @@ export default function ItineraryTimeline({
               : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 hover:border-slate-700"
           }`}
         >
-          All Days ({itinerary.totalDays})
+          {t(localization.timeline.allDays, { count: itinerary.totalDays })}
         </button>
 
         {itinerary.days.map((day) => {
@@ -223,7 +224,7 @@ export default function ItineraryTimeline({
                   style={{ backgroundColor: dayColor.hex }}
                 />
               )}
-              <span>Day {day.day}</span>
+              <span>{t(localization.timeline.dayTab, { day: day.day })}</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                   isActive
@@ -258,7 +259,7 @@ export default function ItineraryTimeline({
                 </div>
               </div>
               <span className="text-xs text-slate-500 font-mono">
-                {dayPlan.stops.length} stops
+                {dayPlan.stops.length} {localization.common.stops}
               </span>
             </div>
 
@@ -305,7 +306,10 @@ export default function ItineraryTimeline({
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-semibold border border-slate-700/80">
-                            Stop {stop.order} &bull; {stop.timeOfDay}
+                            {t(localization.timeline.stopBadge, {
+                              order: stop.order,
+                              timeOfDay: stop.timeOfDay,
+                            })}
                           </span>
                           <span
                             className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-medium border ${categoryColor.bg} ${categoryColor.text} ${categoryColor.border}`}
@@ -344,7 +348,7 @@ export default function ItineraryTimeline({
                           <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                           <span>
                             <strong className="text-amber-300 font-semibold">
-                              Insider Tip:{" "}
+                              {localization.timeline.insiderTip}{" "}
                             </strong>
                             {stop.insiderTip}
                           </span>
@@ -366,7 +370,7 @@ export default function ItineraryTimeline({
           <Card variant="glass" className="p-4 border-slate-800">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Route Highlights
+              {localization.timeline.highlightsTitle}
             </h4>
             <ul className="space-y-1.5 text-xs text-slate-300">
               {itinerary.highlights.map((h, i) => (
@@ -384,7 +388,7 @@ export default function ItineraryTimeline({
           <Card variant="glass" className="p-4 border-slate-800">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Luggage className="w-3.5 h-3.5 text-teal-400" />
-              Essential Packing
+              {localization.timeline.packingTitle}
             </h4>
             <ul className="space-y-1.5 text-xs text-slate-300">
               {itinerary.packingTips.map((tip, i) => (

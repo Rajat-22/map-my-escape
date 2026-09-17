@@ -1,8 +1,9 @@
-﻿"use client";
+﻿﻿"use client";
 
 import React, { useEffect } from "react";
 import { X, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { localization } from "@/lib/localization";
 
 export interface ModalDialogProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export default function ModalDialog({
   subtitle,
   children,
   showOkButton = true,
-  okButtonText = "Okay, Done",
+  okButtonText = localization.common.okButtonText,
   onOk,
   footerLeft,
 }: ModalDialogProps) {
@@ -77,7 +78,7 @@ export default function ModalDialog({
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              {title || "Escape Route Planner"}
+              {title || localization.homepage.plannerTitle}
             </h3>
             {subtitle && (
               <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
@@ -92,7 +93,7 @@ export default function ModalDialog({
               type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Close dialog"
+              aria-label={localization.common.closeDialog}
             >
               <X className="w-5 h-5" />
             </button>
@@ -110,11 +111,11 @@ export default function ModalDialog({
             <div className="flex items-center gap-2">{footerLeft}</div>
           ) : (
           <div className="text-[11px] text-slate-500 hidden sm:block">
-            Press{" "}
+            {localization.common.pressEscHint}{" "}
             <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-slate-700">
               ESC
             </kbd>{" "}
-            or click Cancel to close
+            {localization.common.pressEscSuffix}
           </div>
           )}
 
@@ -126,7 +127,7 @@ export default function ModalDialog({
               onClick={onClose}
               className="cursor-pointer"
             >
-              Cancel
+              {localization.common.cancel}
             </Button>
 
             {showOkButton && (

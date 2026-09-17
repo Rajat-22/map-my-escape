@@ -26,6 +26,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { localization, t } from "@/lib/localization";
 import "@/styles/generating-overlay.css";
 import {
   Sun,
@@ -79,7 +80,7 @@ export default function GeneratingOverlay({
   interests = [],
   mode = "generate",
 }: GeneratingOverlayProps) {
-  const city = startingCity?.trim() || "your destination";
+  const city = startingCity?.trim() || localization.generatingOverlay.defaultCity;
   const places = useMemo(
     () => mustVisitPlaces.map((p) => p.trim()).filter(Boolean),
     [mustVisitPlaces]
@@ -88,37 +89,36 @@ export default function GeneratingOverlay({
   // Build the rotation. Real, specific work first, generic padding after, so the
   // loop never runs dry even for a fast request.
   const messages = useMemo(() => {
+    const overlay = localization.generatingOverlay;
     const list: string[] =
-      mode === "remix"
-        ? ["Recalculating your route…", "Reshuffling your days…"]
-        : ["Mapping your escape route…"];
+      mode === "remix" ? [...overlay.remixMessages] : [...overlay.generateMessages];
 
     if (places.length > 0) {
       // Name the traveller's own picks so the wait feels like their trip.
       list.push(
-        ...places.map((place) => `Adding ${place} to your itinerary…`)
+        ...places.map((place) => t(overlay.addingPlace, { place }))
       );
-      list.push("Filling the gaps with nearby hidden gems…");
+      list.push(overlay.fillingGapsWithPlaces);
     } else {
       // No places given — describe the kind of stops being chosen instead.
       list.push(
-        "Scouting the best local spots…",
-        "Hand-picking cafes, temples and viewpoints…",
-        "Filling your days with nearby hidden gems…"
+        overlay.scouting,
+        overlay.handPicking,
+        overlay.fillingDays
       );
     }
 
     if (interests.length > 0) {
       list.push(
-        `Matching them to your ${interests.slice(0, 3).join(", ")} vibes…`
+        t(overlay.matchingVibes, { vibes: interests.slice(0, 3).join(", ") })
       );
     }
 
     list.push(
-      `Drawing the map for ${city}…`,
-      "Sequencing stops so the route flows…",
-      "Estimating travel times and durations…",
-      "Adding insider tips from locals…"
+      t(overlay.drawingMap, { city }),
+      overlay.sequencing,
+      overlay.estimating,
+      overlay.addingTips
     );
 
     return list;

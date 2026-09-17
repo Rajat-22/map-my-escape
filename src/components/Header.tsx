@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import AnimatedScene from "@/components/AnimatedScene";
 import siteContent from "@/data/siteContent.json";
+import { localization, t } from "@/lib/localization";
 
 export interface HeaderProps {
   /** Primary CTA callback (e.g. scroll to itinerary planner) */
@@ -50,15 +51,15 @@ export default function Header({
           <div className="text-center max-w-3xl mx-auto space-y-4">
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            {siteContent.brand.tagline.split("Escape")[0]}
+            {localization.brand.taglinePrefix}{" "}
             <span className="bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
-              Escape
+              {localization.brand.taglineHighlight}
             </span>{" "}
-            Your Way.
+            {localization.brand.taglineSuffix}
           </h1>
 
           <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto font-normal">
-            {siteContent.brand.subheading}
+            {localization.brand.subheading}
           </p>
 
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
@@ -68,7 +69,7 @@ export default function Header({
               icon={<ArrowRight className="w-5 h-5" />}
               onClick={handleStartPlanning}
             >
-              Build Your Escape
+              {localization.header.cta}
             </Button>
           </div>
           </div>
@@ -80,7 +81,7 @@ export default function Header({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-6">
             <span className="text-xs font-mono uppercase tracking-widest text-slate-400">
-              How MapMyEscape Works
+              {localization.header.howItWorks}
             </span>
           </div>
 
@@ -97,7 +98,7 @@ export default function Header({
                   </div>
                   <div className="space-y-1">
                     <span className="text-xs font-mono font-bold text-sky-400">
-                      STEP {step.step}
+                      {t(localization.header.stepLabel, { step: step.step })}
                     </span>
                     <h3 className="text-base font-semibold text-white">
                       {step.title}

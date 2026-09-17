@@ -12,6 +12,7 @@ import {
 import L from "leaflet";
 import { Maximize2 } from "lucide-react";
 import { ItineraryStop, ItineraryCategory } from "@/types/itinerary";
+import { localization, t } from "@/lib/localization";
 import { getCategoryIcon, CATEGORY_COLOR_MAP, getDayColor } from "@/lib/icons";
 import { fetchRoadPathsByDay } from "@/lib/routeService";
 import "@/styles/leaflet-map.css";
@@ -131,8 +132,8 @@ function MapControls({ stops }: { stops: ItineraryStop[] }) {
           type="button"
           onMouseDown={onMouseDown}
           onClick={() => map.zoomIn()}
-          title="Zoom in"
-          aria-label="Zoom in"
+          title={localization.map.zoomIn}
+          aria-label={localization.map.zoomIn}
           className={`${buttonClass} border-b`}
         >
           +
@@ -141,8 +142,8 @@ function MapControls({ stops }: { stops: ItineraryStop[] }) {
           type="button"
           onMouseDown={onMouseDown}
           onClick={() => map.zoomOut()}
-          title="Zoom out"
-          aria-label="Zoom out"
+          title={localization.map.zoomOut}
+          aria-label={localization.map.zoomOut}
           className={`${buttonClass} border-b`}
         >
           &minus;
@@ -151,8 +152,8 @@ function MapControls({ stops }: { stops: ItineraryStop[] }) {
           type="button"
           onMouseDown={onMouseDown}
           onClick={handleFit}
-          title="Fit route in view"
-          aria-label="Fit route in view"
+          title={localization.map.fitRoute}
+          aria-label={localization.map.fitRoute}
           className={buttonClass}
         >
           <Maximize2 className="h-4 w-4" />
@@ -372,9 +373,9 @@ export default function MapComponent({
           <Popup>
             <div className="p-2 text-xs text-slate-200">
               <strong className="block text-sky-400 font-semibold mb-0.5">
-                Starting Escape Point
+                {localization.map.emptyMarkerTitle}
               </strong>
-              Configure vibes and submit the form to generate route coordinates.
+              {localization.map.emptyMarkerBody}
             </div>
           </Popup>
         </Marker>
@@ -410,7 +411,10 @@ export default function MapComponent({
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-500/30 font-bold">
-                    Day {stop.day} &bull; #{stop.order}
+                    {t(localization.map.dayStopBadge, {
+                      day: stop.day,
+                      order: stop.order,
+                    })}
                   </span>
                   <span className="text-slate-400 text-[10px]">
                     {stop.timeOfDay}
@@ -428,7 +432,9 @@ export default function MapComponent({
 
                 {stop.insiderTip && (
                   <div className="mt-2 pt-1.5 border-t border-slate-800 text-[11px] text-amber-300">
-                    <span className="font-semibold">Tip: </span>
+                    <span className="font-semibold">
+                      {localization.map.tipPrefix}{" "}
+                    </span>
                     {stop.insiderTip}
                   </div>
                 )}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { localization } from "@/lib/localization";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MapMyEscape | Dynamic Travel Route Planner",
-  description: "Generate personalized travel itineraries with real-time route visualization on interactive maps.",
+  title: localization.metadata.title,
+  description: localization.metadata.description,
 };
 
 export default function RootLayout({

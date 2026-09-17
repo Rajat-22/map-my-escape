@@ -1,4 +1,4 @@
-﻿﻿"use client";
+﻿﻿﻿"use client";
 
 import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
@@ -9,6 +9,7 @@ import ItineraryForm from "@/components/ItineraryForm";
 import ItineraryTimeline from "@/components/ItineraryTimeline";
 import GeneratingOverlay from "@/components/GeneratingOverlay";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { localization, t } from "@/lib/localization";
 import { TripRequest, ItineraryData, ItineraryStop } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
@@ -18,7 +19,7 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
     <div className="flex h-full w-full items-center justify-center bg-slate-900 text-slate-400">
       <div className="flex items-center gap-2">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
-        <span>Loading Real Map...</span>
+        <span>{localization.homepage.mapLoading}</span>
       </div>
     </div>
   ),
@@ -90,15 +91,12 @@ export default function Home() {
         // No fallback: surface the server's message (or a sensible default).
         console.warn(`[itinerary] failed after ${elapsed}s:`, data?.error);
         setGenerationError(
-          data?.error ||
-            "We couldn't build your itinerary. Please try again in a moment.",
+          data?.error || localization.homepage.errorGenerateFallback,
         );
       }
     } catch (err) {
       console.warn("Itinerary request failed:", err);
-      setGenerationError(
-        "We couldn't reach the itinerary service. Check your connection and try again.",
-      );
+      setGenerationError(localization.homepage.errorUnreachable);
     } finally {
       setIsGenerating(false);
       setGeneratingFor(null);
@@ -152,15 +150,12 @@ export default function Home() {
       } else {
         console.warn(`[itinerary] remix failed after ${elapsed}s:`, data?.error);
         setGenerationError(
-          data?.error ||
-            "We couldn't rebuild your itinerary. Please try again in a moment.",
+          data?.error || localization.homepage.errorRemixFallback,
         );
       }
     } catch (err) {
       console.warn("Remix request failed:", err);
-      setGenerationError(
-        "We couldn't reach the itinerary service. Check your connection and try again.",
-      );
+      setGenerationError(localization.homepage.errorUnreachable);
     } finally {
       setIsRemixing(false);
       setGeneratingFor(null);
@@ -211,8 +206,8 @@ export default function Home() {
       <ModalDialog
         isOpen={isPlannerOpen}
         onClose={handleClosePlanner}
-        title="Escape Route Planner"
-        subtitle="Plan your trip and explore your itinerary without leaving this dialog."
+        title={localization.homepage.plannerTitle}
+        subtitle={localization.homepage.plannerSubtitle}
         showOkButton={!!currentItinerary && !isModifyingForm}
         footerLeft={
           isModifyingForm && currentItinerary ? (
@@ -222,7 +217,7 @@ export default function Home() {
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700/80 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-sky-400" />
-              Back to Itinerary
+              {localization.homepage.backToItinerary}
             </button>
           ) : undefined
         }
@@ -244,7 +239,7 @@ export default function Home() {
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-rose-200">
-                  Couldn&apos;t generate your itinerary
+                  {localization.homepage.errorTitle}
                 </p>
                 <p className="mt-0.5 text-xs text-rose-200/80">{generationError}</p>
               </div>
@@ -253,7 +248,7 @@ export default function Home() {
                 onClick={() => setGenerationError(null)}
                 className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/20 hover:text-white cursor-pointer"
               >
-                Dismiss
+                {localization.common.dismiss}
               </button>
             </div>
           )}
@@ -322,10 +317,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-        <p>
-          MapMyEscape &copy; {new Date().getFullYear()} &mdash; Dynamic
-          Travel Routes & Real-Time Geospatial Visualization
-        </p>
+        <p>{t(localization.footer.copyright, { year: new Date().getFullYear() })}</p>
       </footer>
     </div>
   );
