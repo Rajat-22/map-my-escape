@@ -88,23 +88,12 @@ export default function ItineraryTimeline({
       ? itinerary.days
       : itinerary.days.filter((d) => d.day === selectedDay);
 
-  const totalStopsCount = itinerary.stops.length;
-
   return (
     <div className="space-y-6">
       {/* 1. Header Card with Summary & Modify CTA */}
       <Card variant="glass" className="p-5 border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/80">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">
-                <CheckCircle2 className="w-3 h-3" />
-                Route Ready &bull; {itinerary.totalDays} Days
-              </span>
-              <span className="text-xs text-slate-400 font-mono">
-                {totalStopsCount} Curated Stops
-              </span>
-            </div>
             <h2 className="text-xl font-bold text-white tracking-tight">
               {itinerary.tripTitle}
             </h2>

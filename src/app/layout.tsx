@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MapMyEscape | AI-Powered Dynamic Travel Route Planner",
+  title: "MapMyEscape | Dynamic Travel Route Planner",
   description: "Generate personalized travel itineraries with real-time route visualization on interactive maps.",
 };
 

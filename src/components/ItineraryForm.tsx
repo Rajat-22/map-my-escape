@@ -32,6 +32,7 @@ import { TripRequest } from "@/types/itinerary";
 export interface ItineraryFormProps {
   initialValues?: TripRequest | null;
   onSubmit?: (data: TripRequest) => void;
+  onReset?: () => void;
   isLoading?: boolean;
 }
 
@@ -68,6 +69,7 @@ const PACE_OPTIONS: Array<{
 export default function ItineraryForm({
   initialValues,
   onSubmit,
+  onReset,
   isLoading = false,
 }: ItineraryFormProps) {
   const [startingCity, setStartingCity] = useState(
@@ -121,6 +123,10 @@ export default function ItineraryForm({
     setPace("moderate");
     setTransport("Walking & TukTuk");
     setCustomNotes("");
+    // Let the parent clear anything derived from the previous submission (the
+    // itinerary still plotted on the map), so resetting the form does not leave
+    // a stale route behind.
+    onReset?.();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -415,7 +421,7 @@ export default function ItineraryForm({
             isLoading={isLoading}
             icon={<Send className="w-4 h-4" />}
           >
-            Generate AI Escape Route
+            Generate Escape Route
           </Button>
 
           <p className="text-center text-[11px] text-slate-500 mt-2">

@@ -13,6 +13,8 @@ export interface ModalDialogProps {
   showOkButton?: boolean;
   okButtonText?: string;
   onOk?: () => void;
+  /** Optional content shown on the left of the footer bar, e.g. a back action. */
+  footerLeft?: React.ReactNode;
 }
 
 export default function ModalDialog({
@@ -24,6 +26,7 @@ export default function ModalDialog({
   showOkButton = true,
   okButtonText = "Okay, Done",
   onOk,
+  footerLeft,
 }: ModalDialogProps) {
   // Lock background scroll when modal is open and handle Escape key
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function ModalDialog({
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              {title || "AI Escape Route Planner"}
+              {title || "Escape Route Planner"}
             </h3>
             {subtitle && (
               <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
@@ -103,6 +106,9 @@ export default function ModalDialog({
 
         {/* Footer with Okay / Cancel Actions */}
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-800/80 bg-slate-950/80 shrink-0">
+          {footerLeft ? (
+            <div className="flex items-center gap-2">{footerLeft}</div>
+          ) : (
           <div className="text-[11px] text-slate-500 hidden sm:block">
             Press{" "}
             <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-slate-700">
@@ -110,6 +116,7 @@ export default function ModalDialog({
             </kbd>{" "}
             or click Cancel to close
           </div>
+          )}
 
           <div className="flex items-center gap-2.5 ml-auto">
             <Button

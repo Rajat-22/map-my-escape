@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { Compass, MapPin, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
+import { Compass, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
 import siteContent from "@/data/siteContent.json";
 import { ItineraryData } from "@/types/itinerary";
 import {
@@ -13,10 +13,9 @@ import {
 
 export interface NavbarProps {
   onSelectSavedItinerary?: (itinerary: ItineraryData) => void;
-  onOpenPlanner?: () => void;
 }
 
-export default function Navbar({ onSelectSavedItinerary, onOpenPlanner }: NavbarProps) {
+export default function Navbar({ onSelectSavedItinerary }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Subscribe to storage changes with stable cached snapshots
@@ -122,15 +121,6 @@ export default function Navbar({ onSelectSavedItinerary, onOpenPlanner }: Navbar
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={onOpenPlanner}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-lg shadow-sky-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <MapPin className="w-3.5 h-3.5 text-slate-950" />
-            <span>Open Planner</span>
-          </button>
         </div>
       </div>
     </nav>
