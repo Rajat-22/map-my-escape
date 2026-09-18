@@ -8,8 +8,11 @@ import HomePage from "@/components/HomePage";
 import ItineraryForm from "@/components/ItineraryForm";
 import ItineraryTimeline from "@/components/ItineraryTimeline";
 import GeneratingOverlay from "@/components/GeneratingOverlay";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import Toast from "@/components/Toast";
+import { Button } from "@/components/ui/Button";
+import { ArrowLeft } from "lucide-react";
 import { localization, t } from "@/lib/localization";
+import { generateItinerary } from "@/lib/itineraryService";
 import { TripRequest, ItineraryData, ItineraryStop } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
@@ -27,6 +30,9 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
 
 export default function Home() {
   const [isPlannerOpen, setIsPlannerOpen] = useState(false);
+
+  // Non-destructive close: hides the dialog but keeps the session, so reopening
+  // restores the itinerary. Used by "Done", the X button, ESC and the backdrop.
   const handleClosePlanner = useCallback(() => setIsPlannerOpen(false), []);
   const [formInitialValues, setFormInitialValues] = useState<TripRequest | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -67,40 +73,25 @@ export default function Home() {
     setGeneratingFor(request);
     setLastSubmittedRequest(request);
     setGenerationError(null);
-    const startedAt = Date.now();
 
-    try {
-      const res = await fetch("/api/generate-itinerary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(request),
-      });
+    const result = await generateItinerary(request, "generated");
 
-      const data = await res.json().catch(() => null);
-      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(2);
-
-      if (res.ok && data?.itinerary) {
-        console.log(`[itinerary] generated in ${elapsed}s (${data.source})`);
-        setCurrentItinerary(data.itinerary);
-        setIsModifyingForm(false);
-        setSelectedDay(0);
-        if (data.itinerary.stops?.length > 0) {
-          setActiveStopId(data.itinerary.stops[0].id);
-        }
-      } else {
-        // No fallback: surface the server's message (or a sensible default).
-        console.warn(`[itinerary] failed after ${elapsed}s:`, data?.error);
-        setGenerationError(
-          data?.error || localization.homepage.errorGenerateFallback,
-        );
+    if (result.ok) {
+      setCurrentItinerary(result.itinerary);
+      setIsModifyingForm(false);
+      setSelectedDay(0);
+      if (result.itinerary.stops?.length > 0) {
+        setActiveStopId(result.itinerary.stops[0].id);
       }
-    } catch (err) {
-      console.warn("Itinerary request failed:", err);
-      setGenerationError(localization.homepage.errorUnreachable);
-    } finally {
-      setIsGenerating(false);
-      setGeneratingFor(null);
+    } else {
+      // No fallback: surface the server's message (or a sensible default).
+      setGenerationError(
+        result.error || localization.homepage.errorGenerateFallback,
+      );
     }
+
+    setIsGenerating(false);
+    setGeneratingFor(null);
   };
 
   const handleRemixTrip = async () => {
@@ -128,42 +119,25 @@ export default function Home() {
     setGeneratingMode("remix");
     setGeneratingFor(variationRequest);
     setGenerationError(null);
-    const startedAt = Date.now();
 
-    try {
-      const res = await fetch("/api/generate-itinerary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(variationRequest),
-      });
+    const result = await generateItinerary(variationRequest, "remix generated");
 
-      const data = await res.json().catch(() => null);
-      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(2);
-
-      if (res.ok && data?.itinerary) {
-        console.log(`[itinerary] remix generated in ${elapsed}s (${data.source})`);
-        setCurrentItinerary(data.itinerary);
-        setSelectedDay(0);
-        if (data.itinerary.stops?.length > 0) {
-          setActiveStopId(data.itinerary.stops[0].id);
-        }
-      } else {
-        console.warn(`[itinerary] remix failed after ${elapsed}s:`, data?.error);
-        setGenerationError(
-          data?.error || localization.homepage.errorRemixFallback,
-        );
+    if (result.ok) {
+      setCurrentItinerary(result.itinerary);
+      setSelectedDay(0);
+      if (result.itinerary.stops?.length > 0) {
+        setActiveStopId(result.itinerary.stops[0].id);
       }
-    } catch (err) {
-      console.warn("Remix request failed:", err);
-      setGenerationError(localization.homepage.errorUnreachable);
-    } finally {
-      setIsRemixing(false);
-      setGeneratingFor(null);
+    } else {
+      setGenerationError(
+        result.error || localization.homepage.errorRemixFallback,
+      );
     }
+
+    setIsRemixing(false);
+    setGeneratingFor(null);
   };
 
-  // Stepping back from the modify form without changing anything: show the
-  // itinerary that is still loaded, exactly as it was.
   const handleCancelModify = () => {
     if (!currentItinerary) return;
     setIsModifyingForm(false);
@@ -174,8 +148,6 @@ export default function Home() {
     }
   };
 
-  // Resetting the form means the traveller is starting over: drop the previous
-  // itinerary so the map stops plotting a route that no longer matches the form.
   const handleFormReset = () => {
     setCurrentItinerary(null);
     setLastSubmittedRequest(null);
@@ -183,6 +155,20 @@ export default function Home() {
     setSelectedDay(0);
     setGenerationError(null);
   };
+
+  // "Discard & Close": abandon the whole session. Closes the dialog and clears
+  // every piece of planner state, so reopening shows a fresh, empty form rather
+  // than the itinerary or half-filled inputs the traveller just rejected.
+  const handleDiscardSession = useCallback(() => {
+    setIsPlannerOpen(false);
+    setFormInitialValues(null);
+    setIsModifyingForm(false);
+    setCurrentItinerary(null);
+    setLastSubmittedRequest(null);
+    setActiveStopId(null);
+    setSelectedDay(0);
+    setGenerationError(null);
+  }, []);
 
   const handleSelectSavedItinerary = (saved: ItineraryData) => {
     setCurrentItinerary(saved);
@@ -197,63 +183,33 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      {/* Top navigation bar with saved escapes */}
       <Header onSelectSavedItinerary={handleSelectSavedItinerary} />
-
-      {/* Landing page hero + how-it-works */}
       <HomePage onStartPlanning={handleStartPlanning} />
-
-      {/* The planner exists only inside the dialog, never below the landing page. */}
       <ModalDialog
         isOpen={isPlannerOpen}
         onClose={handleClosePlanner}
         title={localization.homepage.plannerTitle}
         subtitle={localization.homepage.plannerSubtitle}
         showOkButton={!!currentItinerary && !isModifyingForm}
+        /* "Done" keeps the itinerary and just closes; "Discard & Close"
+           abandons the session and clears everything. */
+        okButtonText={localization.common.done}
+        cancelButtonText={localization.common.discardAndClose}
+        onOk={handleClosePlanner}
+        onCancel={handleDiscardSession}
         footerLeft={
           isModifyingForm && currentItinerary ? (
-            <button
+            <Button
               type="button"
+              variant="subtle"
               onClick={handleCancelModify}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700/80 transition-colors cursor-pointer"
+              icon={<ArrowLeft className="w-3.5 h-3.5 text-sky-400" />}
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-sky-400" />
               {localization.homepage.backToItinerary}
-            </button>
+            </Button>
           ) : undefined
         }
       >
-        {/* `relative` anchors the generating overlay so it greys out the entire
-            planner — form and map — while a request is in flight.
-
-            Driven by `generatingFor` rather than `isGenerating`, because a
-            remix sets the former but not the latter — and the overlay needs the
-            request in both flows so it can name the traveller's own places. */}
-        <div className="relative">
-          {/* Generation failed. There is no fallback plan, so tell the traveller
-              plainly and let them retry rather than showing invented data. */}
-          {generationError && !generatingFor && (
-            <div
-              role="alert"
-              className="mb-5 flex items-start gap-3 flex-wrap rounded-xl border-rose-500/40 bg-rose-500/10 px-4 py-3"
-            >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-rose-200">
-                  {localization.homepage.errorTitle}
-                </p>
-                <p className="mt-0.5 text-xs text-rose-200/80">{generationError}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGenerationError(null)}
-                className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/20 hover:text-white cursor-pointer"
-              >
-                {localization.common.dismiss}
-              </button>
-            </div>
-          )}
-        </div>
 
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {generatingFor && (
@@ -264,7 +220,7 @@ export default function Home() {
               mode={generatingMode}
             />
           )}
-          {/* Left Column: Form / Timeline */}
+
           <div className="min-w-0 lg:col-span-5 space-y-6">
             {currentItinerary && !isModifyingForm ? (
               <ItineraryTimeline
@@ -302,7 +258,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Right Column: Real-Time Map */}
           <div className="min-w-0 lg:col-span-7 lg:sticky lg:top-0">
             <div className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl h-[480px] lg:h-[580px]">
               <MapComponent
@@ -315,11 +270,19 @@ export default function Home() {
           </div>
         </div>
       </ModalDialog>
-
-      {/* Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
         <p>{t(localization.footer.copyright, { year: new Date().getFullYear() })}</p>
       </footer>
+
+      {/* Transient failure notice. Fixed to the viewport so it is seen even
+          though the traveller is scrolled down at the form/map when the
+          generating overlay lifts. Shown only once the overlay is gone. */}
+      <Toast
+        message={generatingFor ? null : generationError}
+        title={localization.homepage.errorTitle}
+        onDismiss={() => setGenerationError(null)}
+        closeLabel={localization.common.dismiss}
+      />
     </div>
   );
 }
