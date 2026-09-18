@@ -13,7 +13,19 @@ export interface ModalDialogProps {
   children: React.ReactNode;
   showOkButton?: boolean;
   okButtonText?: string;
+  /**
+   * Primary (right-hand) action. "Done" keeps whatever the dialog holds — it
+   * closes without discarding. Falls back to `onClose` when not supplied.
+   */
   onOk?: () => void;
+  cancelButtonText?: string;
+  /**
+   * Secondary (left-hand) action. "Discard & Close" abandons the current
+   * session — it should close AND reset. Falls back to `onClose` when not
+   * supplied, but callers that own state should pass it so the two footer
+   * actions are genuinely distinct.
+   */
+  onCancel?: () => void;
   /** Optional content shown on the left of the footer bar, e.g. a back action. */
   footerLeft?: React.ReactNode;
 }
@@ -25,8 +37,10 @@ export default function ModalDialog({
   subtitle,
   children,
   showOkButton = true,
-  okButtonText = localization.common.okButtonText,
+  okButtonText = localization.common.done,
   onOk,
+  cancelButtonText = localization.common.cancel,
+  onCancel,
   footerLeft,
 }: ModalDialogProps) {
   // Lock background scroll when modal is open and handle Escape key
@@ -124,10 +138,10 @@ export default function ModalDialog({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={onCancel ?? onClose}
               className="cursor-pointer"
             >
-              {localization.common.cancel}
+              {cancelButtonText}
             </Button>
 
             {showOkButton && (

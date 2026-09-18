@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Compass, Bookmark, Trash2, ChevronRight, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { localization, t } from "@/lib/localization";
 import { ItineraryData } from "@/types/itinerary";
 import {
@@ -45,19 +46,21 @@ export default function Header({ onSelectSavedItinerary }: HeaderProps) {
         <div className="flex items-center gap-3">
           {/* Saved Escapes Toggle Button */}
           <div className="relative">
-            <button
+            <Button
               type="button"
+              variant="subtle-dark"
               onClick={() => setIsOpen((prev) => !prev)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+              icon={<Bookmark className="w-3.5 h-3.5 text-teal-400" />}
             >
-              <Bookmark className="w-3.5 h-3.5 text-teal-400" />
-              <span>{localization.common.saved}</span>
-              {savedEscapes.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-mono text-[10px] border-teal-500/30 font-bold">
-                  {savedEscapes.length}
-                </span>
-              )}
-            </button>
+              <span className="inline-flex items-center gap-1.5">
+                {localization.common.saved}
+                {savedEscapes.length > 0 && (
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-mono text-[10px] border-teal-500/30 font-bold">
+                    {savedEscapes.length}
+                  </span>
+                )}
+              </span>
+            </Button>
 
             {/* Saved Escapes Dropdown Drawer */}
             {isOpen && (

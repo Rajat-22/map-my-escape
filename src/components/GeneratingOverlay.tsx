@@ -1,29 +1,5 @@
 "use client";
 
-/**
- * GeneratingOverlay
- *
- * Full-surface grey-out shown while the itinerary request is in flight.
- *
- * Deliberately chrome-free: it is just a dimming scrim with the content floated
- * on it, no card or border, so the planner reads as "dimmed and busy" rather
- * than being covered by another window.
- *
- * Content, centred in the viewport, top → bottom:
- *   1. a single travel icon that cycles sun → cloud → mountain → tree → beach →
- *      bird, cross-fading with a soft lift between each
- *   2. one line of text cycling through the real work being done
- *   3. a progress bar that fills as the wait elapses
- *
- * The message list is personalised: when the traveller added their own places
- * we name them ("Adding Hadimba Temple…"); otherwise we fall back to describing
- * the kind of stops the planner is choosing.
- *
- * Presentational only: `role="status"` so screen readers announce progress, but
- * it never traps focus (nothing here is interactive) and every animation is
- * disabled under `prefers-reduced-motion` (see globals.css).
- */
-
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { localization, t } from "@/lib/localization";

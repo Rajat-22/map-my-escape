@@ -180,14 +180,14 @@ export default function ItineraryForm({
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="reset"
             onClick={handleReset}
-            className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-slate-800"
+            icon={<RotateCcw className="w-3.5 h-3.5" />}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
             {localization.common.reset}
-          </button>
+          </Button>
         </div>
 
         {/* 1. Starting City & Must-Visit Places */}
@@ -241,16 +241,16 @@ export default function ItineraryForm({
                 autoComplete="off"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all"
               />
-              <button
+              <Button
                 type="button"
+                variant="teal"
                 onClick={() => addPlace(placeInput)}
                 disabled={!placeInput.trim()}
                 aria-label={localization.common.addPlaceAria}
-                className="px-3.5 rounded-xl bg-teal-500/20 text-teal-300 border-teal-500/60 hover:bg-teal-500/30 hover:border-teal-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 text-xs font-semibold cursor-pointer"
+                icon={<Plus className="w-3.5 h-3.5" />}
               >
-                <Plus className="w-3.5 h-3.5" />
                 {localization.common.add}
-              </button>
+              </Button>
             </div>
 
             {/* Added places rendered as removable chips */}
