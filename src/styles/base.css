@@ -15,3 +15,22 @@ body {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+/**
+ * Hide scrollbars while keeping the element scrollable.
+ *
+ * `scrollbar-width: none` covers modern Firefox; the ::-webkit- rules cover
+ * Chrome/Safari/Edge. `-ms-overflow-style` is for legacy Edge. The element can
+ * still be scrolled by wheel, drag, keyboard and touch — only the track/thumb
+ * chrome is removed.
+ */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
