@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -49,8 +49,9 @@ export default function ItineraryTimeline({
   onRemixTrip,
   isRemixing = false,
 }: ItineraryTimelineProps) {
-  // Controlled or uncontrolled selected day (0 = All Days)
-  const [internalSelectedDay, setInternalSelectedDay] = useState<number>(0);
+  // Controlled or uncontrolled selected day. Defaults to the first day; there is
+  // no "all days" view, the traveller always sees one day at a time.
+  const [internalSelectedDay, setInternalSelectedDay] = useState<number>(1);
   const selectedDay =
     controlledSelectedDay !== undefined
       ? controlledSelectedDay
@@ -83,11 +84,13 @@ export default function ItineraryTimeline({
     }
   };
 
-  // Filter stops by selected day
-  const displayedDays =
-    selectedDay === 0
-      ? itinerary.days
-      : itinerary.days.filter((d) => d.day === selectedDay);
+  // Show only the selected day. Falls back to the first day if the selected
+  // one is not present, so the list is never empty.
+  const displayedDays = (() => {
+    const match = itinerary.days.filter((d) => d.day === selectedDay);
+    if (match.length > 0) return match;
+    return itinerary.days.length > 0 ? [itinerary.days[0]] : [];
+  })();
 
   return (
     <div className="space-y-6">
@@ -188,19 +191,8 @@ export default function ItineraryTimeline({
         )}
       </Card>
 
-      {/* 2. Day Selector Filter Tabs */}
+      {/* 2. Day Selector Tabs — one tab per day; there is no "all days" view. */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button
-          type="button"
-          onClick={() => handleDayChange(0)}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-            selectedDay === 0
-              ? "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20"
-              : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200 hover:border-slate-700"
-          }`}
-        >
-          {t(localization.timeline.allDays, { count: itinerary.totalDays })}
-        </button>
 
         {itinerary.days.map((day) => {
           const dayColor = getDayColor(day.day);

@@ -39,7 +39,8 @@ export default function Home() {
   const [currentItinerary, setCurrentItinerary] =
     useState<ItineraryData | null>(null);
   const [activeStopId, setActiveStopId] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<number>(0);
+  // 1-based: the timeline shows one day at a time, so the default is Day 1.
+  const [selectedDay, setSelectedDay] = useState<number>(1);
   const [isModifyingForm, setIsModifyingForm] = useState(false);
 
   const [lastSubmittedRequest, setLastSubmittedRequest] =
@@ -79,7 +80,7 @@ export default function Home() {
     if (result.ok) {
       setCurrentItinerary(result.itinerary);
       setIsModifyingForm(false);
-      setSelectedDay(0);
+      setSelectedDay(1);
       if (result.itinerary.stops?.length > 0) {
         setActiveStopId(result.itinerary.stops[0].id);
       }
@@ -124,7 +125,7 @@ export default function Home() {
 
     if (result.ok) {
       setCurrentItinerary(result.itinerary);
-      setSelectedDay(0);
+      setSelectedDay(1);
       if (result.itinerary.stops?.length > 0) {
         setActiveStopId(result.itinerary.stops[0].id);
       }
@@ -142,7 +143,7 @@ export default function Home() {
     if (!currentItinerary) return;
     setIsModifyingForm(false);
     setFormInitialValues(null);
-    setSelectedDay(0);
+    setSelectedDay(1);
     if (currentItinerary.stops?.length > 0) {
       setActiveStopId(currentItinerary.stops[0].id);
     }
@@ -152,7 +153,7 @@ export default function Home() {
     setCurrentItinerary(null);
     setLastSubmittedRequest(null);
     setActiveStopId(null);
-    setSelectedDay(0);
+    setSelectedDay(1);
     setGenerationError(null);
   };
 
@@ -166,7 +167,7 @@ export default function Home() {
     setCurrentItinerary(null);
     setLastSubmittedRequest(null);
     setActiveStopId(null);
-    setSelectedDay(0);
+    setSelectedDay(1);
     setGenerationError(null);
   }, []);
 
@@ -175,7 +176,7 @@ export default function Home() {
     setLastSubmittedRequest(null);
     setIsPlannerOpen(true);
     setIsModifyingForm(false);
-    setSelectedDay(0);
+    setSelectedDay(1);
     if (saved.stops?.length > 0) {
       setActiveStopId(saved.stops[0].id);
     }
@@ -201,9 +202,11 @@ export default function Home() {
             ? localization.homepage.plannerSubtitle
             : undefined
         }
-        showOkButton={!!currentItinerary && !isModifyingForm}
-        /* "Done" keeps the itinerary and just closes; "Discard & Close"
-           abandons the session and clears everything. */
+        /* "Done" keeps whatever the dialog holds and just closes; "Discard &
+           Close" abandons the session and clears everything. Both are shown in
+           every view, so the dialog is always closed from the footer rather
+           than a floating icon. */
+        showOkButton
         okButtonText={localization.common.done}
         cancelButtonText={localization.common.discardAndClose}
         onOk={handleClosePlanner}

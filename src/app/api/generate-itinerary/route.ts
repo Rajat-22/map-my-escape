@@ -189,6 +189,7 @@ CRITICAL RULES:
 6. Reflect EVERY entry in "mustVisitPlaces" as an actual stop in "days". Never silently drop one.
 7. "mustVisitPlaces" in your output MUST be the SAME list you were given above, in the same order, but with each name corrected to the real, properly-spelled and properly-capitalised name of that place near ${sanitizedRequest.startingCity}. Fix typos, wrong casing and phonetic spellings (e.g. "ram jhuls" -> "Ram Jhula", "neelkanth mahadev" -> "Neelkanth Mahadev Temple"). This list is shown back to the traveler, so it must look right. If a name is already correct, or you cannot confidently identify the place, return it unchanged rather than inventing a name.
 8. Use those same corrected names for the corresponding stops in "days", so the itinerary and the list agree.
+9. "days" MUST contain exactly one entry for EVERY day of the trip, in order — ${sanitizedRequest.days} entries numbered 1 through ${sanitizedRequest.days}. Never return only the first day. Each stop's "day" must match the "day" of the entry it sits in.
 `;
 
     // Total budget for the WHOLE request, across every model and retry.
@@ -275,8 +276,61 @@ CRITICAL RULES:
               );
             }
 
+            // Ensure a day object exists for every requested day.
+            //
+            // The model occasionally returns only the first day's block (it can
+            // run out of output tokens on a long trip), so `days` comes back
+            // short even though stops reference later day numbers. The timeline
+            // renders the "All Days" view straight from `days`, so a short array
+            // is exactly the "only Day 1 shows" bug. Rebuild the array from the
+            // stops, preserving the model's titles/themes where they exist.
+            const byDay = new Map<number, ItineraryStop[]>();
+            for (const stop of flatStops) {
+              const dayNum = Number.isFinite(Number(stop.day))
+                ? Number(stop.day)
+                : 1;
+              const bucket = byDay.get(dayNum);
+              if (bucket) bucket.push(stop);
+              else byDay.set(dayNum, [stop]);
+            }
+
+            const modelDays: DayPlan[] = Array.isArray(parsedData.days)
+              ? parsedData.days
+              : [];
+            const dayNumbers = [
+              ...new Set([
+                ...Array.from(
+                  { length: Math.max(1, Number(sanitizedRequest.days) || 1) },
+                  (_, i) => i + 1
+                ),
+                ...byDay.keys(),
+              ]),
+            ].sort((a, b) => a - b);
+
+            const days: DayPlan[] = dayNumbers.map((dayNum) => {
+              const existing = modelDays.find(
+                (d) => Number(d?.day) === dayNum
+              );
+              const stops = (byDay.get(dayNum) ?? [])
+                .slice()
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+              return {
+                day: dayNum,
+                title:
+                  existing?.title && existing.title.trim()
+                    ? existing.title
+                    : `Day ${dayNum}`,
+                theme:
+                  existing?.theme && existing.theme.trim()
+                    ? existing.theme
+                    : "Exploration",
+                stops,
+              };
+            });
+
             const itinerary: ItineraryData = {
               ...parsedData,
+              days,
               stops: flatStops,
               // The model is asked to correct the traveller's spellings; keep
               // the request's own list unless the model's answer is a
