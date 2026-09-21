@@ -101,9 +101,16 @@ function MapControls({ stops }: { stops: ItineraryStop[] }) {
   const map = useMap();
 
   const handleFit = () => {
-    if (stops.length > 0) {
+    // Guard against stops with missing/non-finite coordinates: a saved itinerary
+    // can carry incomplete data, and L.latLngBounds throws "Invalid LatLng
+    // object: (NaN, NaN)" rather than skipping such a stop. Filter first, then
+    // fall back to the default view when nothing usable remains.
+    const safeStops = stops.filter(
+      (s) => Number.isFinite(s?.lat) && Number.isFinite(s?.lng)
+    );
+    if (safeStops.length > 0) {
       const bounds = L.latLngBounds(
-        stops.map((s) => [s.lat, s.lng] as [number, number])
+        safeStops.map((s) => [s.lat, s.lng] as [number, number])
       );
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     } else {
@@ -184,18 +191,59 @@ function MapViewController({
   }, [map]);
 
   useEffect(() => {
-    if (activeStop) {
-      map.flyTo([activeStop.lat, activeStop.lng], 15, {
-        animate: true,
-        duration: 1.2,
-      });
-    } else if (stops && stops.length > 0) {
-      const bounds = L.latLngBounds(
-        stops.map((s) => [s.lat, s.lng] as [number, number])
+    // Leaflet throws "Invalid LatLng object: (NaN, NaN)" for a stop that has no
+    // usable coordinates — it does not skip such a stop. Generated and saved
+    // itineraries can both carry missing/null/out-of-range lats and lngs, so
+    // every coordinate is normalised through one helper before it reaches
+    // Leaflet and anything that fails validation is dropped.
+    const coord = (lat: unknown, lng: unknown): [number, number] | null => {
+      const a = typeof lat === "string" ? Number(lat) : lat;
+      const b = typeof lng === "string" ? Number(lng) : lng;
+      if (typeof a !== "number" || typeof b !== "number") return null;
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      // Reject out-of-range values too — they are finite but not valid LatLngs.
+      if (a < -90 || a > 90 || b < -180 || b > 180) return null;
+      return [a, b];
+    };
+
+    const safeStops = (stops ?? [])
+      .map((s) => ({ point: coord(s?.lat, s?.lng) }))
+      .filter(
+        (entry): entry is { point: [number, number] } => entry.point !== null
       );
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-    } else {
-      map.setView(center, 13);
+
+    const activePoint = activeStop ? coord(activeStop.lat, activeStop.lng) : null;
+    const centerPoint = coord(center?.[0], center?.[1]);
+
+    // An animated fly/fit needs a laid-out container: Leaflet projects through
+    // the map's pixel size, and when the map is 0×0 (the panel is hidden or has
+    // not been laid out yet) that division yields NaN and flyTo throws
+    // "Invalid LatLng object: (NaN, NaN)" from inside the animation loop.
+    // So: make sure the container has real dimensions first, and if it does not,
+    // wait for the next frame instead of flying into a NaN viewport.
+    const size = map.getSize();
+    if (!size || size.x === 0 || size.y === 0) {
+      const raf = requestAnimationFrame(() => {
+        if (map.getContainer().isConnected) map.invalidateSize();
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+
+    // A valid, finite point is still only safe to hand Leaflet if the map itself
+    // agrees it is a real LatLng — this catches any coordinate that slipped past
+    // the range check above for reasons specific to the Leaflet build.
+    const canUse = (p: [number, number] | null): p is [number, number] =>
+      p !== null && Boolean(L.latLng(p[0], p[1]));
+
+    if (canUse(activePoint)) {
+      map.flyTo(activePoint, 15, { animate: true, duration: 1.2 });
+    } else if (safeStops.length > 0) {
+      map.fitBounds(L.latLngBounds(safeStops.map((e) => e.point)), {
+        padding: [50, 50],
+        maxZoom: 15,
+      });
+    } else if (canUse(centerPoint)) {
+      map.setView(centerPoint, 13);
     }
   }, [stops, center, activeStop, map]);
 
@@ -269,26 +317,41 @@ export default function MapComponent({
   selectedDay = 0,
   onSelectStop,
 }: MapComponentProps) {
-  // Filter stops by selectedDay if day > 0
+  // Filter stops by selectedDay if day > 0, and drop any stop whose coordinates
+  // are missing or non-finite. Saved itineraries can carry incomplete data, and
+  // Leaflet throws "Invalid LatLng object: (NaN, NaN)" for such a stop rather
+  // than skipping it — filtering here keeps markers, routes and bounds safe.
   const visibleStops = useMemo(() => {
-    if (!selectedDay || selectedDay === 0) return stops;
-    return stops.filter((s) => s.day === selectedDay);
+    const hasCoords = (s: ItineraryStop) =>
+      Number.isFinite(s?.lat) && Number.isFinite(s?.lng);
+    const scoped =
+      !selectedDay || selectedDay === 0
+        ? stops
+        : stops.filter((s) => s.day === selectedDay);
+    return scoped.filter(hasCoords);
   }, [stops, selectedDay]);
 
-  // Center coordinates (default: Delhi or first stop)
+  // Center coordinates (default: Delhi or first usable stop)
   const centerPosition: [number, number] = useMemo(() => {
     if (visibleStops && visibleStops.length > 0) {
       return [visibleStops[0].lat, visibleStops[0].lng];
     }
-    if (stops && stops.length > 0) {
-      return [stops[0].lat, stops[0].lng];
+    const firstValid = stops.find(
+      (s) => Number.isFinite(s?.lat) && Number.isFinite(s?.lng)
+    );
+    if (firstValid) {
+      return [firstValid.lat, firstValid.lng];
     }
     return [28.6139, 77.209];
   }, [visibleStops, stops]);
 
+  // Derive the active stop from the coordinate-filtered list, not the raw stops
+  // array. A saved itinerary can carry a stop with missing coords, and passing
+  // that to the map controller would hand Leaflet a NaN LatLng. Filtering here
+  // guarantees the controller only ever receives a stop that can be plotted.
   const activeStop = useMemo(
-    () => stops.find((s) => s.id === activeStopId),
-    [stops, activeStopId]
+    () => visibleStops.find((s) => s.id === activeStopId),
+    [visibleStops, activeStopId]
   );
 
   // Rendered route geometry per day: {

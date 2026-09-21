@@ -24,7 +24,6 @@ import {
   Send,
   Sliders,
 } from "lucide-react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import siteContent from "@/data/siteContent.json";
 import { localization, t } from "@/lib/localization";
@@ -166,7 +165,11 @@ export default function ItineraryForm({
   };
 
   return (
-    <Card variant="glass" className="p-6 border-slate-800">
+    // Plain wrapper, not a Card: the form sits directly on the dialog surface so
+    // it blends in while the content scrolls. A Card variant would still paint
+    // its own background, border and blur, which read as a tinted panel with a
+    // halo against the dialog.
+    <div>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Form Title & Reset */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
@@ -447,7 +450,7 @@ export default function ItineraryForm({
           </p>
         </div>
       </form>
-    </Card>
+    </div>
   );
 }
 

@@ -188,8 +188,19 @@ export default function Home() {
       <ModalDialog
         isOpen={isPlannerOpen}
         onClose={handleClosePlanner}
-        title={localization.homepage.plannerTitle}
-        subtitle={localization.homepage.plannerSubtitle}
+        /* The form view already renders its own "Configure Your Escape" heading, so
+           the modal title is only shown alongside the itinerary, avoiding two
+           stacked headings. */
+        title={
+          currentItinerary && !isModifyingForm
+            ? localization.homepage.plannerTitle
+            : undefined
+        }
+        subtitle={
+          currentItinerary && !isModifyingForm
+            ? localization.homepage.plannerSubtitle
+            : undefined
+        }
         showOkButton={!!currentItinerary && !isModifyingForm}
         /* "Done" keeps the itinerary and just closes; "Discard & Close"
            abandons the session and clears everything. */
@@ -197,6 +208,29 @@ export default function Home() {
         cancelButtonText={localization.common.discardAndClose}
         onOk={handleClosePlanner}
         onCancel={handleDiscardSession}
+        /* Compact chrome: the form carries its own submit, so the footer stays lean
+           and the always-on ESC hint line is dropped. */
+        compact
+        /* The map is an edge-to-edge side panel so it touches the dialog's top,
+           right and bottom corners instead of sitting in a padded, bordered box. */
+        sidePanel={
+          <MapComponent
+            stops={currentItinerary?.stops || []}
+            activeStopId={activeStopId}
+            selectedDay={selectedDay}
+            onSelectStop={(stop) => setActiveStopId(stop.id)}
+          />
+        }
+        /* Below lg the map is not pinned above the fold — it is rendered at the
+           end of the form so the traveller scrolls down to it. */
+        mobilePanel={
+          <MapComponent
+            stops={currentItinerary?.stops || []}
+            activeStopId={activeStopId}
+            selectedDay={selectedDay}
+            onSelectStop={(stop) => setActiveStopId(stop.id)}
+          />
+        }
         footerLeft={
           isModifyingForm && currentItinerary ? (
             <Button
@@ -211,7 +245,7 @@ export default function Home() {
         }
       >
 
-        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="relative">
           {generatingFor && (
             <GeneratingOverlay
               mustVisitPlaces={generatingFor.mustVisitPlaces}
@@ -221,7 +255,7 @@ export default function Home() {
             />
           )}
 
-          <div className="min-w-0 lg:col-span-5 space-y-6">
+          <div className="min-w-0 space-y-6">
             {currentItinerary && !isModifyingForm ? (
               <ItineraryTimeline
                 itinerary={currentItinerary}
@@ -258,16 +292,6 @@ export default function Home() {
             )}
           </div>
 
-          <div className="min-w-0 lg:col-span-7 lg:sticky lg:top-0">
-            <div className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl h-[480px] lg:h-[580px]">
-              <MapComponent
-                stops={currentItinerary?.stops || []}
-                activeStopId={activeStopId}
-                selectedDay={selectedDay}
-                onSelectStop={(stop) => setActiveStopId(stop.id)}
-              />
-            </div>
-          </div>
         </div>
       </ModalDialog>
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
