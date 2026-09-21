@@ -1,7 +1,7 @@
 ﻿﻿"use client";
 
 import React, { useEffect } from "react";
-import { X, Check, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { localization } from "@/lib/localization";
 
@@ -110,17 +110,6 @@ export default function ModalDialog({
 
       {/* Modal Dialog Box */}
       <div className="relative w-full max-w-7xl h-[94vh] max-h-[94vh] flex flex-col rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl shadow-black/60 z-10 animate-in zoom-in-95 duration-200 lg:flex-row overflow-hidden">
-        {/* Floating close button — replaces the old full-width header bar so the
-            dialog keeps its height for content. Stays put while the body scrolls. */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3.5 left-3.5 z-30 p-2 rounded-full bg-slate-950/70 backdrop-blur text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-          aria-label={localization.common.closeDialog}
-        >
-          <X className="w-4 h-4" />
-        </button>
-
         {/* Left column: padded scrollable content. When a sidePanel is present
             this shares the row with the edge-to-edge panel on the right. */}
         <div className={`${
@@ -128,12 +117,12 @@ export default function ModalDialog({
           } flex-col min-h-0 flex-1 flex`}>
         {/* Modal Scrollable Body (min-h-0 lets the inner map size correctly).
             The scrollbar is hidden; scrolling still works. */}
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none p-4 sm:p-6 pt-14 sm:pt-16">
-          {/* Inline title block: the heading now lives in the content flow, tucking
-              under the floating close button instead of sitting in its own bar. */}
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none p-4 sm:p-6">
+          {/* Inline title block: the heading lives in the content flow, at the top
+              of the scrollable body, with the actions in the footer below. */}
           {(title || subtitle) && (
             <div className={compact ? "mb-4" : "mb-6"}>
-              <div className="flex items-center gap-3 pr-10">
+              <div className="flex items-center gap-3">
                 <span className="h-9 w-9 shrink-0 rounded-xl bg-teal-500/15 border-teal-500/40 flex items-center justify-center text-teal-300">
                   <Sparkles className="w-4 h-4" />
                 </span>
@@ -163,15 +152,13 @@ export default function ModalDialog({
           )}
         </div>
 
-        {/* Footer — only rendered when it actually carries an action. In compact
-            dialogs (the planner form owns its own submit) there is no bar at all,
-            so no height is spent on chrome. */}
-        {(footerLeft || showOkButton) && (
-          <div
-            className={`flex items-center justify-between gap-3 ${
-              compact ? "px-4 sm:px-6 py-3" : "px-5 py-3.5"
-            } border-t border-slate-800/80 bg-slate-950/80 shrink-0`}
-          >
+        {/* Footer — the dialog's actions live here, at the bottom, so the close
+            affordance is always reachable without a floating icon. */}
+        <div
+          className={`flex items-center justify-between gap-3 ${
+            compact ? "px-4 sm:px-6 py-3" : "px-5 py-3.5"
+          } border-t border-slate-800/80 bg-slate-950/80 shrink-0`}
+        >
           {footerLeft ? (
             <div className="flex items-center gap-2">{footerLeft}</div>
           ) : (
@@ -211,7 +198,6 @@ export default function ModalDialog({
             )}
           </div>
         </div>
-        )}
         </div>
 
         {/* Edge-to-edge panel: fills the dialog to its top, right and bottom
