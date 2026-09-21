@@ -146,7 +146,7 @@ export default function ModalDialog({
               the map is reached by scrolling to the bottom, rather than always
               occupying space above the fold. */}
           {mobilePanel && (
-            <div className="mt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 h-72 overflow-hidden lg:hidden">
+            <div className="mt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 h-96 overflow-hidden lg:hidden">
               {mobilePanel}
             </div>
           )}
