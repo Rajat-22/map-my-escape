@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TripRequest, ItineraryData, ItineraryStop, DayPlan } from "@/types/itinerary";
 
-// Gemini can take 30-45s on a full itinerary prompt, so allow enough time
-// for the route handler to finish before the platform cancels it.
-export const maxDuration = 60;
+// Gemini can take 30-45s on a full itinerary prompt, and longer under load, so
+// allow enough time for the route handler to finish before the platform cancels
+// it. 2 minutes gives every model + retry a real chance instead of failing at 60s.
+export const maxDuration = 120;
 
 /**
  * Reconcile the model's corrected must-visit names against what was requested.
@@ -145,20 +146,20 @@ ${sanitizedRequest.customNotes ? `- Special Requests: ${sanitizedRequest.customN
 Return valid JSON strictly matching this schema:
 {
   "id": "escape-unique-id",
-  "tripTitle": "Short catchy title",
+  "tripTitle": "2-5 word title naming the place(s). Use the real place names the traveler gave. e.g. \"Rishikesh & Mussoorie\", \"Goa\", \"Amritsar to Manali\". No taglines, no poetry, no length.",
   "startingCity": "${sanitizedRequest.startingCity}",
   "mustVisitPlaces": ${JSON.stringify(mustVisitPlaces)},
-  "destinationSummary": "2-3 sentences overview of the journey vibe",
+  "destinationSummary": "MAX 1 short sentence, under 15 words. Plain and factual. e.g. \"Cafes, temples and cliff views around Goa.\" No marketing, no flowery language.",
   "totalDays": ${sanitizedRequest.days},
   "pace": "${sanitizedRequest.pace}",
   "transport": "${sanitizedRequest.transport}",
-  "highlights": ["3 key journey highlights"],
-  "packingTips": ["3 essential practical packing items"],
+  "highlights": ["3 highlights, 3-6 words each"],
+  "packingTips": ["3 items, 1-3 words each"],
   "days": [
     {
       "day": 1,
-      "title": "Day 1: Theme title",
-      "theme": "Theme description",
+      "title": "Short 2-4 word label for the day, e.g. \"Beaches & Cafes\" or \"Old Town Walk\". NO \"Day 1:\" prefix, no sentences.",
+      "theme": "2-4 words only, e.g. \"Cafes & coast\".",
       "stops": [
         {
           "id": "stop-1-1",
@@ -171,8 +172,8 @@ Return valid JSON strictly matching this schema:
           "lng": 0.0,
           "estimatedDuration": "e.g. 1.5 hours",
           "travelTimeFromPrevious": "e.g. 15 min via scooter",
-          "description": "Engaging description of why to visit",
-          "insiderTip": "Specific insider local tip",
+          "description": "MAX 1 short sentence, under 15 words. Plain and useful, not a blog. e.g. \"Cliffside cafe with sea views and good coffee.\"",
+          "insiderTip": "MAX 10 words. One practical tip only.",
           "bestTimeToVisit": "Morning"
         }
       ]
@@ -190,6 +191,7 @@ CRITICAL RULES:
 7. "mustVisitPlaces" in your output MUST be the SAME list you were given above, in the same order, but with each name corrected to the real, properly-spelled and properly-capitalised name of that place near ${sanitizedRequest.startingCity}. Fix typos, wrong casing and phonetic spellings (e.g. "ram jhuls" -> "Ram Jhula", "neelkanth mahadev" -> "Neelkanth Mahadev Temple"). This list is shown back to the traveler, so it must look right. If a name is already correct, or you cannot confidently identify the place, return it unchanged rather than inventing a name.
 8. Use those same corrected names for the corresponding stops in "days", so the itinerary and the list agree.
 9. "days" MUST contain exactly one entry for EVERY day of the trip, in order — ${sanitizedRequest.days} entries numbered 1 through ${sanitizedRequest.days}. Never return only the first day. Each stop's "day" must match the "day" of the entry it sits in.
+10. BE SHORT EVERYWHERE. This is a quick reference, not a travel blog. "tripTitle" = 2-5 words of real place names. "destinationSummary" = one line under 15 words. Each day "title" = 2-4 words with NO "Day N:" prefix. Each day "theme" = 2-4 words. Each stop "description" = one line under 15 words. Each "insiderTip" = under 10 words. No adjectives for their own sake, no flowing sentences, no scene-setting.
 `;
 
     // Total budget for the WHOLE request, across every model and retry.
@@ -198,13 +200,13 @@ CRITICAL RULES:
     // allowed 6 x 60s of waiting before giving up, which is why a hard failure
     // took ~88s instead of the intended minute. Every attempt now also has to
     // fit inside this deadline, so the traveller is told within ~1 minute.
-    const totalBudgetMs = Number(process.env.GEMINI_TOTAL_BUDGET_MS) || 60000;
+    const totalBudgetMs = Number(process.env.GEMINI_TOTAL_BUDGET_MS) || 120000;
     const deadlineAt = requestStartedAt + totalBudgetMs;
 
     for (const modelName of candidateModels) {
       // The newest Gemini models emit reasoning tokens, so a full itinerary
       // prompt regularly takes 15-40s.
-      const configuredTimeout = Number(process.env.GEMINI_TIMEOUT_MS) || 60000;
+      const configuredTimeout = Number(process.env.GEMINI_TIMEOUT_MS) || 120000;
 
       for (let attempt = 1; attempt <= 2; attempt++) {
       const startedAt = Date.now();
