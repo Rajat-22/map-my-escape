@@ -1,6 +1,5 @@
 import React from "react";
 
-/** Accent applied to the control's focus ring. */
 export type FieldAccent = "sky" | "teal" | "emerald" | "indigo";
 
 const ACCENT_FOCUS: Record<FieldAccent, string> = {
@@ -30,14 +29,6 @@ export interface FieldProps {
   controlClassName?: string;
 }
 
-/**
- * A labelled form control.
- *
- * Owns the three things every field in the planner repeats: the label row
- * (optional icon, optional required marker, optional right-aligned hint) and
- * the control shell (rounded, dark, accent focus ring). Previously each field
- * spelled all of this out inline, with the shell drifting between copies.
- */
 export function Field({
   id,
   label,
