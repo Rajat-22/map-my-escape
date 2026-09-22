@@ -9,9 +9,7 @@ import siteContent from "@/data/siteContent.json";
 import { localization, t } from "@/lib/localization";
 
 export interface HomePageProps {
-  /** Primary CTA callback (e.g. scroll to itinerary planner) */
   onStartPlanning?: () => void;
-  /** Backwards-compatible aliases */
   onStartPlanningClick?: () => void;
   onExploreClick?: () => void;
 }
@@ -39,15 +37,12 @@ export default function HomePage({
 
   return (
     <header className="border-b border-slate-800/60">
-      {/* ---- Hero band: the animated landscape lives ONLY in here ---- */}
       <div className="relative overflow-hidden">
         <AnimatedScene />
 
-        {/* Faint grid overlay sitting on top of the scene */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28 sm:pt-24 sm:pb-36">
-          {/* Brand Header & Value Proposition */}
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
               {localization.brand.taglinePrefix}{" "}
@@ -75,7 +70,6 @@ export default function HomePage({
         </div>
       </div>
 
-      {/* ---- How it works: solid background, clear of the scene ---- */}
       <div className="bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-6">

@@ -19,7 +19,6 @@ export interface HeaderProps {
 export default function Header({ onSelectSavedItinerary }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Subscribe to storage changes with stable cached snapshots
   const savedEscapes = useSyncExternalStore(
     subscribeToSavedItineraries,
     getSavedItineraries,
