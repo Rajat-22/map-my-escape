@@ -15,32 +15,16 @@ import {
 } from "lucide-react";
 
 export interface GeneratingOverlayProps {
-  /** Places the traveller explicitly asked for, if any. */
   mustVisitPlaces?: string[];
-  /** Resolved start point, used to name the destination in the copy. */
   startingCity?: string;
-  /** Vibes the traveller picked — drives the fallback wording. */
   interests?: string[];
-  /**
-   * "generate" for a first submit, "remix" when reshuffling an existing plan.
-   * A remix gets its own opening line so the traveller reads it as the app
-   * recalculating what they already have, not starting over.
-   */
   mode?: "generate" | "remix";
 }
 
-/** Cadence of the status text rotation, in ms. */
 const MESSAGE_INTERVAL_MS = 2400;
 
-/** Cadence of the icon rotation, in ms — a touch brisker than the text. */
 const ICON_INTERVAL_MS = 1500;
 
-/**
- * The icon reel. Each entry is one "scene" the eye moves through, tapping
- * through the parts of a trip in order: the sun you set off under, the clouds
- * over the pass, the mountains, the forest, the coast, the birds on the way
- * home. `tone` tints each one so the change is unmistakable at a glance.
- */
 const ICONS: Array<{ Icon: LucideIcon; tone: string }> = [
   { Icon: Sun, tone: "text-amber-300" },
   { Icon: Cloud, tone: "text-sky-200" },
@@ -62,21 +46,17 @@ export default function GeneratingOverlay({
     [mustVisitPlaces]
   );
 
-  // Build the rotation. Real, specific work first, generic padding after, so the
-  // loop never runs dry even for a fast request.
   const messages = useMemo(() => {
     const overlay = localization.generatingOverlay;
     const list: string[] =
       mode === "remix" ? [...overlay.remixMessages] : [...overlay.generateMessages];
 
     if (places.length > 0) {
-      // Name the traveller's own picks so the wait feels like their trip.
       list.push(
         ...places.map((place) => t(overlay.addingPlace, { place }))
       );
       list.push(overlay.fillingGapsWithPlaces);
     } else {
-      // No places given — describe the kind of stops being chosen instead.
       list.push(
         overlay.scouting,
         overlay.handPicking,
@@ -103,7 +83,6 @@ export default function GeneratingOverlay({
   const [index, setIndex] = useState(0);
   const [iconIndex, setIconIndex] = useState(0);
 
-  // Advance the message on a fixed cadence, looping forever until unmounted.
   useEffect(() => {
     const id = window.setInterval(() => {
       setIndex((prev) => (prev + 1) % messages.length);
@@ -111,8 +90,6 @@ export default function GeneratingOverlay({
     return () => window.clearInterval(id);
   }, [messages.length]);
 
-  // Cycle the icon slightly faster than the text so the eye always has motion,
-  // even while one long message is still on screen.
   useEffect(() => {
     const id = window.setInterval(() => {
       setIconIndex((prev) => (prev + 1) % ICONS.length);
@@ -122,10 +99,6 @@ export default function GeneratingOverlay({
 
   const { Icon, tone } = ICONS[iconIndex];
 
-  // Portal to <body>. Inside the dialog this overlay would be a child of the
-  // modal's scrolling body, so `fixed` still measured against that scroll box
-  // and pushed the icon up behind the modal's header. At the document root it
-  // is measured against the real viewport and centres where the eye expects.
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -136,9 +109,7 @@ export default function GeneratingOverlay({
     >
       <div className="flex h-full w-full items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
-          {/* ---------- a. Cycling travel icon ----------
-              A plain outline glyph, no badge, no ring, no glow — just the
-              line icon itself. */}
+          {/* ---------- a. Cycling travel icon ----------*/}
           <div className="flex justify-center">
             <span
               key={iconIndex}
@@ -148,9 +119,7 @@ export default function GeneratingOverlay({
             </span>
           </div>
 
-          {/* ---------- b. Cycling status line ----------
-              A fixed slot keeps the bar steady no matter how long the
-              current message is. */}
+          {/* ---------- b. Cycling status line ----------*/}
           <div className="mt-4 flex h-6 items-center justify-center">
             <p
               key={index}
