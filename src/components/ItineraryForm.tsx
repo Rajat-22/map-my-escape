@@ -25,6 +25,8 @@ import {
   Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Field } from "@/components/ui/Field";
+import { OptionButton } from "@/components/ui/OptionButton";
 import siteContent from "@/data/siteContent.json";
 import { localization, t } from "@/lib/localization";
 import { TripRequest } from "@/types/itinerary";
@@ -135,9 +137,6 @@ export default function ItineraryForm({
     setPace("moderate");
     setTransport(localization.form.transportOptions.walkingTuktuk);
     setCustomNotes("");
-    // Let the parent clear anything derived from the previous submission (the
-    // itinerary still plotted on the map), so resetting the form does not leave
-    // a stale route behind.
     onReset?.();
   };
 
@@ -165,13 +164,8 @@ export default function ItineraryForm({
   };
 
   return (
-    // Plain wrapper, not a Card: the form sits directly on the dialog surface so
-    // it blends in while the content scrolls. A Card variant would still paint
-    // its own background, border and blur, which read as a tinted panel with a
-    // halo against the dialog.
     <div>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Form Title & Reset */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -193,38 +187,27 @@ export default function ItineraryForm({
           </Button>
         </div>
 
-        {/* 1. Starting City & Must-Visit Places */}
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-sky-400" />
-              {localization.form.startingCityLabel}{" "}
-              <span className="text-rose-400">*</span>
-            </label>
-
-            <input
-              type="text"
-              required
-              value={startingCity}
-              onChange={(e) => setStartingCity(e.target.value)}
-              placeholder={localization.form.startingCityPlaceholder}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all"
-            />
-          </div>
+          <Field
+            id="starting-city"
+            label={localization.form.startingCityLabel}
+            icon={<MapPin className="w-4 h-4 text-sky-400" />}
+            required
+            accent="sky"
+            type="text"
+            value={startingCity}
+            onChange={(e) => setStartingCity(e.target.value)}
+            placeholder={localization.form.startingCityPlaceholder}
+          />
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-teal-400" />
-                {t(localization.form.placesLabel, { count: places.length })}
-              </label>
-              <span className="text-[11px] text-slate-500">
-                {localization.form.placesHint}
-              </span>
-            </div>
-
             <div className="flex items-stretch gap-2">
-              <input
+              <Field
+                id="place-input"
+                label={t(localization.form.placesLabel, { count: places.length })}
+                icon={<MapPin className="w-4 h-4 text-teal-400" />}
+                hint={localization.form.placesHint}
+                accent="teal"
                 type="text"
                 value={placeInput}
                 onChange={(e) => setPlaceInput(e.target.value)}
@@ -242,7 +225,7 @@ export default function ItineraryForm({
                 }}
                 placeholder={localization.form.placesPlaceholder}
                 autoComplete="off"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all"
+                className="flex-1"
               />
               <Button
                 type="button"
@@ -251,12 +234,12 @@ export default function ItineraryForm({
                 disabled={!placeInput.trim()}
                 aria-label={localization.common.addPlaceAria}
                 icon={<Plus className="w-3.5 h-3.5" />}
+                className="self-end"
               >
                 {localization.common.add}
               </Button>
             </div>
 
-            {/* Added places rendered as removable chips */}
             {places.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-2.5">
                 {places.map((place) => (
@@ -285,7 +268,6 @@ export default function ItineraryForm({
           </div>
         </div>
 
-        {/* 2. Travel Vibes (Interactive Tag Badges) */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-xs font-semibold text-slate-300 flex items-center gap-1.5">
@@ -305,32 +287,28 @@ export default function ItineraryForm({
               const IconComp = CATEGORY_ICON_MAP[category.icon] || Compass;
 
               return (
-                <button
-                  type="button"
+                <OptionButton
                   key={category.id}
+                  selected={isSelected}
+                  accent="sky"
+                  layout="row"
+                  showActiveDot
                   onClick={() => toggleInterest(category.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 cursor-pointer select-none active:scale-95 ${
-                    isSelected
-                      ? "bg-sky-500/20 text-sky-300 border border-sky-400 shadow-sm shadow-sky-500/20"
-                      : "bg-slate-950/50 text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-slate-300"
-                  }`}
+                  icon={
+                    <IconComp
+                      className={`w-3.5 h-3.5 ${
+                        isSelected ? "text-sky-400" : "text-slate-500"
+                      }`}
+                    />
+                  }
                 >
-                  <IconComp
-                    className={`w-3.5 h-3.5 ${
-                      isSelected ? "text-sky-400" : "text-slate-500"
-                    }`}
-                  />
-                  <span>{category.label}</span>
-                  {isSelected && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 ml-0.5 animate-pulse" />
-                  )}
-                </button>
+                  {category.label}
+                </OptionButton>
               );
             })}
           </div>
         </div>
 
-        {/* 3. Number of Days & Travel Pace */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
@@ -370,24 +348,20 @@ export default function ItineraryForm({
             </label>
             <div className="grid grid-cols-3 gap-1.5">
               {PACE_OPTIONS.map((item) => (
-                <button
-                  type="button"
+                <OptionButton
                   key={item.value}
+                  selected={pace === item.value}
+                  accent="teal"
+                  layout="plain"
                   onClick={() => setPace(item.value)}
-                  className={`py-2 px-1 text-center rounded-xl text-xs font-medium transition-all ${
-                    pace === item.value
-                      ? "bg-teal-500/20 text-teal-300 border border-teal-400"
-                      : "bg-slate-950/60 text-slate-400 border border-slate-800 hover:border-slate-700"
-                  }`}
                 >
                   {item.label}
-                </button>
+                </OptionButton>
               ))}
             </div>
           </div>
         </div>
 
-        {/* 4. Transport Mode */}
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
             <Car className="w-4 h-4 text-emerald-400" />
@@ -396,43 +370,34 @@ export default function ItineraryForm({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {TRANSPORT_OPTIONS.map((opt) => {
               const IconComp = opt.icon;
-              const isSelected = transport === opt.label;
               return (
-                <button
-                  type="button"
+                <OptionButton
                   key={opt.label}
+                  selected={transport === opt.label}
+                  accent="emerald"
+                  layout="stack"
                   onClick={() => setTransport(opt.label)}
-                  className={`p-2 rounded-xl text-xs flex flex-col items-center justify-center gap-1 transition-all ${
-                    isSelected
-                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400"
-                      : "bg-slate-950/60 text-slate-400 border border-slate-800 hover:border-slate-700"
-                  }`}
+                  icon={<IconComp className="w-3.5 h-3.5" />}
                 >
-                  <IconComp className="w-3.5 h-3.5" />
-                  <span className="text-[11px] truncate w-full text-center">
-                    {opt.label}
-                  </span>
-                </button>
+                  {opt.label}
+                </OptionButton>
               );
             })}
           </div>
         </div>
 
-        {/* 5. Custom Notes */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-            {localization.form.notesLabel}
-          </label>
-          <textarea
-            value={customNotes}
-            onChange={(e) => setCustomNotes(e.target.value)}
-            rows={2}
-            placeholder={localization.form.notesPlaceholder}
-            className="w-full px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all resize-none"
-          />
-        </div>
+        <Field
+          id="custom-notes"
+          label={localization.form.notesLabel}
+          as="textarea"
+          accent="sky"
+          rows={2}
+          value={customNotes}
+          onChange={(e) => setCustomNotes(e.target.value)}
+          placeholder={localization.form.notesPlaceholder}
+          controlClassName="resize-none"
+        />
 
-        {/* 6. Submit Button */}
         <div className="pt-2">
           <Button
             type="submit"
