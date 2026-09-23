@@ -20,23 +20,9 @@ import {
 } from "lucide-react";
 import { ItineraryCategory } from "@/types/itinerary";
 
-/**
- * One colour per day, used by BOTH the map route line and the itinerary list so
- * Day 3 on the map is visibly the same Day 3 in the list.
- *
- * Each entry carries two forms of the same colour:
- *   hex        — for Leaflet, which draws SVG paths and needs a raw colour
- *   solid/muted— Tailwind class strings for the UI (active tab, day badge)
- *
- * Keeping them in one place is the point: the list previously hard-coded sky
- * blue for every day, so only Day 1 (whose route colour happens to be sky) ever
- * looked like it matched the map.
- */
 export const DAY_COLORS: Array<{
   hex: string;
-  /** Filled style: used when this day is the active selection. */
   solid: string;
-  /** Tinted style: used for badges and unselected affordances. */
   muted: string;
 }> = [
   {
@@ -45,9 +31,9 @@ export const DAY_COLORS: Array<{
     muted: "bg-sky-500/20 border-sky-400/40 text-sky-300",
   },
   {
-    hex: "#2dd4bf", // Day 2: Teal 400
-    solid: "bg-teal-400 text-slate-950 shadow-md shadow-teal-500/20",
-    muted: "bg-teal-500/20 border-teal-400/40 text-teal-300",
+    hex: "#a78bfa", // Day 2: Violet 400 — kept off teal so it never blends into the travel panel
+    solid: "bg-violet-400 text-slate-950 shadow-md shadow-violet-500/20",
+    muted: "bg-violet-500/20 border-violet-400/40 text-violet-300",
   },
   {
     hex: "#fbbf24", // Day 3: Amber 400
@@ -55,24 +41,24 @@ export const DAY_COLORS: Array<{
     muted: "bg-amber-500/20 border-amber-400/40 text-amber-300",
   },
   {
-    hex: "#f43f5e", // Day 4: Rose 500
-    solid: "bg-rose-500 text-white shadow-md shadow-rose-500/20",
+    hex: "#fb7185", // Day 4: Rose 400
+    solid: "bg-rose-400 text-slate-950 shadow-md shadow-rose-500/20",
     muted: "bg-rose-500/20 border-rose-400/40 text-rose-300",
   },
   {
-    hex: "#a855f7", // Day 5: Purple 500
-    solid: "bg-purple-500 text-white shadow-md shadow-purple-500/20",
-    muted: "bg-purple-500/20 border-purple-400/40 text-purple-300",
+    hex: "#e879f9", // Day 5: Fuchsia 400
+    solid: "bg-fuchsia-400 text-slate-950 shadow-md shadow-fuchsia-500/20",
+    muted: "bg-fuchsia-500/20 border-fuchsia-400/40 text-fuchsia-300",
   },
   {
-    hex: "#34d399", // Day 6: Emerald 400
-    solid: "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20",
-    muted: "bg-emerald-500/20 border-emerald-400/40 text-emerald-300",
+    hex: "#fb923c", // Day 6: Orange 400
+    solid: "bg-orange-400 text-slate-950 shadow-md shadow-orange-500/20",
+    muted: "bg-orange-500/20 border-orange-400/40 text-orange-300",
   },
   {
-    hex: "#60a5fa", // Day 7: Blue 400
-    solid: "bg-blue-400 text-slate-950 shadow-md shadow-blue-500/20",
-    muted: "bg-blue-500/20 border-blue-400/40 text-blue-300",
+    hex: "#818cf8", // Day 7: Indigo 400
+    solid: "bg-indigo-400 text-slate-950 shadow-md shadow-indigo-500/20",
+    muted: "bg-indigo-500/20 border-indigo-400/40 text-indigo-300",
   },
 ];
 
