@@ -1,0 +1,106 @@
+import { ItineraryData } from "@/types/itinerary";
+
+const STORAGE_KEY = "mapmyescape_saved_itineraries_v1";
+
+// In-memory cache to guarantee stable reference for useSyncExternalStore / React re-renders
+let cachedRaw: string | null = null;
+let cachedList: ItineraryData[] = [];
+const EMPTY_LIST: ItineraryData[] = [];
+
+// Custom subscriber listeners
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+function notifyListeners() {
+  listeners.forEach((l) => l());
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("storage"));
+  }
+}
+
+export function subscribeToSavedItineraries(callback: () => void): () => void {
+  listeners.add(callback);
+  const handleStorage = () => {
+    cachedRaw = null; // Invalidate cache on external storage event
+    callback();
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorage);
+  }
+  return () => {
+    listeners.delete(callback);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("storage", handleStorage);
+    }
+  };
+}
+
+export function getSavedItinerariesServerSnapshot(): ItineraryData[] {
+  return EMPTY_LIST;
+}
+
+export function getSavedItineraries(): ItineraryData[] {
+  if (typeof window === "undefined") return EMPTY_LIST;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === cachedRaw) {
+      return cachedList;
+    }
+    cachedRaw = raw;
+    if (!raw) {
+      cachedList = EMPTY_LIST;
+      return cachedList;
+    }
+    const parsed = JSON.parse(raw);
+    cachedList = Array.isArray(parsed) ? parsed : EMPTY_LIST;
+    return cachedList;
+  } catch (err) {
+    console.warn("Error reading saved escapes from localStorage:", err);
+    return EMPTY_LIST;
+  }
+}
+
+export function saveItinerary(itinerary: ItineraryData): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const list = getSavedItineraries();
+    // Prevent duplicate entries by ID or title
+    const filtered = list.filter(
+      (item) =>
+        item.id !== itinerary.id && item.tripTitle !== itinerary.tripTitle,
+    );
+    const updated = [itinerary, ...filtered].slice(0, 20); // Keep up to 20 saved escapes
+    const raw = JSON.stringify(updated);
+    localStorage.setItem(STORAGE_KEY, raw);
+    cachedRaw = raw;
+    cachedList = updated;
+    notifyListeners();
+    return true;
+  } catch (err) {
+    console.warn("Error saving escape to localStorage:", err);
+    return false;
+  }
+}
+
+export function removeSavedItinerary(id: string): ItineraryData[] {
+  if (typeof window === "undefined") return EMPTY_LIST;
+  try {
+    const list = getSavedItineraries();
+    const updated = list.filter((item) => item.id !== id);
+    const raw = JSON.stringify(updated);
+    localStorage.setItem(STORAGE_KEY, raw);
+    cachedRaw = raw;
+    cachedList = updated;
+    notifyListeners();
+    return updated;
+  } catch (err) {
+    console.warn("Error removing escape from localStorage:", err);
+    return EMPTY_LIST;
+  }
+}
+
+export function isItinerarySaved(id: string, tripTitle: string): boolean {
+  if (typeof window === "undefined") return false;
+  const list = getSavedItineraries();
+  return list.some((item) => item.id === id || item.tripTitle === tripTitle);
+}

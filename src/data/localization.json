@@ -1,0 +1,145 @@
+{
+  "brand": {
+    "name": "MapMyEscape",
+    "taglinePrefix": "Ditch the Rigid Itinerary.",
+    "taglineHighlight": "Escape",
+    "taglineSuffix": "Your Way.",
+    "subheading": "Tell us your starting point, favorite vibes—temples, treks, cafes, beaches—and we'll plot an interactive real-time route mapped out day by day."
+  },
+  "common": {
+    "reset": "Reset",
+    "add": "Add",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss",
+    "saved": "Saved",
+    "savedToastTitle": "Itinerary saved",
+    "savedToastMessage": "Find it any time under Saved.",
+    "removedToastTitle": "Itinerary removed",
+    "removedToastMessage": "It was taken out of your Saved escapes.",
+    "closeDialog": "Close dialog",
+    "pressEscHint": "Press",
+    "pressEscSuffix": "or press ESC to close and keep your itinerary",
+    "addPlaceAria": "Add place",
+    "removePlaceAria": "Remove {place}",
+    "day": "Day",
+    "days": "Days",
+    "stops": "stops",
+    "done": "Done",
+    "discardAndClose": "Discard & Close"
+  },
+  "navbar": {
+    "savedButton": "Saved",
+    "savedEscapesTitle": "Saved Escapes ({count})",
+    "emptyTitle": "No saved itineraries yet.",
+    "emptyHint": "Click \"Save Escape\" on any generated route to revisit it here.",
+    "removeSavedAria": "Remove saved escape",
+    "itemMeta": "{startingCity} • {days} Days • {stops} Stops"
+  },
+  "header": {
+    "cta": "Build Your Escape",
+    "howItWorks": "How MapMyEscape Works",
+    "stepLabel": "STEP {step}"
+  },
+  "homepage": {
+    "plannerTitle": "Escape Route Planner",
+    "plannerSubtitle": "Plan your trip and explore your itinerary without leaving this dialog.",
+    "backToItinerary": "Back to Itinerary",
+    "mapLoading": "Loading Real Map...",
+    "errorTitle": "Couldn't generate your itinerary",
+    "errorGenerateFallback": "We couldn't build your itinerary. Please try again in a moment.",
+    "errorRemixFallback": "We couldn't rebuild your itinerary. Please try again in a moment.",
+    "errorUnreachable": "We couldn't reach the itinerary service. Check your connection and try again."
+  },
+  "footer": {
+    "copyright": "MapMyEscape © {year} — Dynamic Travel Routes & Real-Time Geospatial Visualization"
+  },
+  "metadata": {
+    "title": "MapMyEscape | Dynamic Travel Route Planner",
+    "description": "Generate personalized travel itineraries with real-time route visualization on interactive maps."
+  },
+  "form": {
+    "title": "Configure Your Escape",
+    "subtitle": "Customize starting point, travel vibes, and daily rhythm.",
+    "startingCityLabel": "Starting Location / City",
+    "startingCityPlaceholder": "Enter your city or starting point",
+    "placesLabel": "Places You Want To Visit ({count} added)",
+    "placesHint": "Cafes, temples, viewpoints — anything",
+    "placesPlaceholder": "e.g. Hadimba Temple, Cafe 1947, Solang Valley",
+    "placesEmptyHint": "Add the exact spots you don't want to miss — they'll be scheduled into your itinerary automatically.",
+    "vibesLabel": "Select Your Travel Vibes ({count} selected)",
+    "vibesHintEmpty": "Tap to pick your interests",
+    "vibesHintToggle": "Tap to toggle",
+    "durationLabel": "Duration",
+    "durationUnitSingular": "Day",
+    "durationUnitPlural": "Days",
+    "paceLabel": "Travel Pace",
+    "transportLabel": "Preferred Transport",
+    "notesLabel": "Special Requests / Custom Notes (Optional)",
+    "notesPlaceholder": "e.g. Vegetarian food only, love photography spots, prefer quiet mornings...",
+    "submit": "Generate Escape Route",
+    "submitHint": "Sequences day plans, travel times, and plots live coordinates on the map.",
+    "paceOptions": {
+      "relaxed": {
+        "label": "Relaxed",
+        "description": "1-2 stops/day, leisurely vibe"
+      },
+      "moderate": {
+        "label": "Moderate",
+        "description": "3-4 stops/day, balanced pace"
+      },
+      "fast": {
+        "label": "Action-Packed",
+        "description": "5+ stops/day, high energy"
+      }
+    },
+    "transportOptions": {
+      "walkingTuktuk": "Walking & TukTuk",
+      "scooter": "Rented Scooter",
+      "cab": "Cab / Taxi",
+      "selfDrive": "Self-Drive Car"
+    }
+  },
+  "timeline": {
+    "saveEscape": "Save Escape",
+    "remix": "Remix",
+    "modify": "Modify",
+    "pacePrefix": "Pace:",
+    "transportPrefix": "Transport:",
+    "mustVisitsLabel": "Your must-visits",
+    "allDays": "All Days ({count})",
+    "dayTab": "Day {day}",
+    "stopBadge": "Stop {order} • {timeOfDay}",
+    "insiderTip": "Insider Tip:",
+    "highlightsTitle": "Route Highlights",
+    "packingTitle": "Essential Packing"
+  },
+  "generatingOverlay": {
+    "defaultCity": "your destination",
+    "remixMessages": [
+      "Recalculating your route…",
+      "Reshuffling your days…"
+    ],
+    "generateMessages": [
+      "Mapping your escape route…"
+    ],
+    "addingPlace": "Adding {place} to your itinerary…",
+    "fillingGapsWithPlaces": "Filling the gaps with nearby hidden gems…",
+    "scouting": "Scouting the best local spots…",
+    "handPicking": "Hand-picking cafes, temples and viewpoints…",
+    "fillingDays": "Filling your days with nearby hidden gems…",
+    "matchingVibes": "Matching them to your {vibes} vibes…",
+    "drawingMap": "Drawing the map for {city}…",
+    "sequencing": "Sequencing stops so the route flows…",
+    "estimating": "Estimating travel times and durations…",
+    "addingTips": "Adding insider tips from locals…"
+  },
+  "map": {
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fitRoute": "Fit route in view",
+    "emptyMarkerTitle": "Starting Escape Point",
+    "emptyMarkerBody": "Configure vibes and submit the form to generate route coordinates.",
+    "dayStopBadge": "Day {day} • #{order}",
+    "tipPrefix": "Tip:"
+  }
+}

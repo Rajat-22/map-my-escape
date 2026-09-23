@@ -1,0 +1,57 @@
+/**
+ * Toast
+ *
+ * Transient, viewport-fixed notifications. Owner: src/components/Toast.tsx
+ *
+ * Two animations: the card slides down as it appears, and a thin bar along the
+ * bottom drains over the toast's lifetime as a visible countdown to dismissal.
+ */
+
+/* ---- Entry: settle down from above ---- */
+.toast-in {
+  animation: toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes toast-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Countdown bar ----
+   Duration is set inline by the component (it matches the dismiss timeout), so
+   this keyframe only defines the shape: full width draining to zero. */
+.toast-countdown {
+  width: 100%;
+  transform-origin: left center;
+  animation-name: toast-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes toast-countdown {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+/* Respect reduced-motion: appear instantly, and hold the bar full so the row
+   still reads as a deliberate progress indicator rather than a broken one. */
+@media (prefers-reduced-motion: reduce) {
+  .toast-in {
+    animation: none !important;
+  }
+
+  .toast-countdown {
+    animation: none !important;
+    transform: scaleX(1);
+  }
+}

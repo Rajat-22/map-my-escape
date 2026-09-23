@@ -1,10 +1,21 @@
 import React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "gradient";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "gradient"
+    | "subtle"
+    | "subtle-dark"
+    | "danger-ghost"
+    | "teal"
+    | "reset";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
   icon?: React.ReactNode;
+  iconOnly?: boolean;
 }
 
 export function Button({
@@ -13,17 +24,18 @@ export function Button({
   size = "md",
   isLoading = false,
   icon,
+  iconOnly = false,
   className = "",
   disabled,
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-medium transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed select-none";
+    "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed select-none";
 
   const sizeStyles = {
-    sm: "text-xs px-3 py-1.5 gap-1.5",
-    md: "text-sm px-4 py-2.5 gap-2",
-    lg: "text-base px-6 py-3.5 gap-2.5 font-semibold",
+    sm: "text-xs px-3 py-1.5 gap-1.5 rounded-xl",
+    md: "text-sm px-4 py-2.5 gap-2 rounded-xl",
+    lg: "text-base px-6 py-3.5 gap-2.5 font-semibold rounded-xl",
   }[size];
 
   const variantStyles = {
@@ -37,6 +49,16 @@ export function Button({
       "text-slate-400 hover:text-white hover:bg-slate-800/60 focus:ring-slate-400",
     gradient:
       "bg-gradient-to-r from-sky-500 via-teal-400 to-emerald-400 hover:from-sky-400 hover:to-emerald-300 text-slate-950 font-bold shadow-xl shadow-sky-500/20 focus:ring-teal-400 active:scale-[0.98]",
+    subtle:
+      "rounded-lg px-3 py-1.5 gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700/80 text-xs font-semibold transition-colors cursor-pointer",
+    "subtle-dark":
+      "rounded-lg px-3 py-1.5 gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700/80 text-xs font-semibold transition-colors cursor-pointer",
+    "danger-ghost":
+      "rounded-lg px-2 py-1 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/20 hover:text-white cursor-pointer",
+    teal:
+      "rounded-xl px-3.5 gap-1 bg-teal-500/20 text-teal-300 border-teal-500/60 hover:bg-teal-500/30 hover:border-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold cursor-pointer",
+    reset:
+      "rounded px-2 py-1 gap-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors",
   }[variant];
 
   return (
@@ -50,7 +72,7 @@ export function Button({
       ) : (
         icon
       )}
-      <span>{children}</span>
+      {!iconOnly && <span>{children}</span>}
     </button>
   );
 }

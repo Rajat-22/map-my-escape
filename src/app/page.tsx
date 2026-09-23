@@ -1,48 +1,347 @@
-'use client';
+﻿﻿﻿"use client";
 
-import dynamic from 'next/dynamic';
-import ItineraryForm from '@/components/ItineraryForm';
+import { useCallback, useState } from "react";
+import dynamic from "next/dynamic";
+import ModalDialog from "@/components/ModalDialog";
+import Header from "@/components/Header";
+import HomePage from "@/components/HomePage";
+import ItineraryForm from "@/components/ItineraryForm";
+import ItineraryTimeline from "@/components/ItineraryTimeline";
+import GeneratingOverlay from "@/components/GeneratingOverlay";
+import Toast from "@/components/Toast";
+import { Button } from "@/components/ui/Button";
+import { ArrowLeft } from "lucide-react";
+import { localization, t } from "@/lib/localization";
+import { generateItinerary } from "@/lib/itineraryService";
+import { TripRequest, ItineraryData, ItineraryStop } from "@/types/itinerary";
 
 // Dynamically load MapComponent to prevent window is not defined errors during SSR
-const MapComponent = dynamic(() => import('@/components/MapComponent'), {
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center bg-slate-900 text-slate-400">
       <div className="flex items-center gap-2">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
-        <span>Loading Real Map...</span>
+        <span>{localization.homepage.mapLoading}</span>
       </div>
     </div>
   ),
 });
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-6 md:p-12">
-      <div className="z-10 w-full max-w-6xl space-y-8">
-        <header className="text-center">
-          <span className="inline-block rounded-full bg-sky-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-sky-400 border border-sky-500/20 mb-3">
-            Step 1 Baseline
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-            MapMyEscape
-          </h1>
-          <p className="mt-2 text-slate-400 text-base max-w-xl mx-auto">
-            Dynamic AI Travel Planner with Real-Time Map Visualization
-          </p>
-        </header>
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="lg:col-span-1">
-            <ItineraryForm />
+  // Non-destructive close: hides the dialog but keeps the session, so reopening
+  // restores the itinerary. Used by "Done", the X button, ESC and the backdrop.
+  const handleClosePlanner = useCallback(() => setIsPlannerOpen(false), []);
+  const [formInitialValues, setFormInitialValues] = useState<TripRequest | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentItinerary, setCurrentItinerary] =
+    useState<ItineraryData | null>(null);
+  const [activeStopId, setActiveStopId] = useState<string | null>(null);
+  // 1-based: the timeline shows one day at a time, so the default is Day 1.
+  const [selectedDay, setSelectedDay] = useState<number>(1);
+  const [isModifyingForm, setIsModifyingForm] = useState(false);
+
+  const [lastSubmittedRequest, setLastSubmittedRequest] =
+    useState<TripRequest | null>(null);
+  const [isRemixing, setIsRemixing] = useState(false);
+
+  // Drives the generating overlay. Held separately from `isGenerating` so the
+  // overlay always has the request it is narrating, even on the first render
+  // after submit (when `lastSubmittedRequest` and `isGenerating` both flip).
+  const [generatingFor, setGeneratingFor] = useState<TripRequest | null>(null);
+
+  // Which flow the overlay is narrating. A remix says "recalculating" instead
+  // of "mapping", so the traveller knows their existing plan is being reshuffled
+  // rather than built from scratch.
+  const [generatingMode, setGeneratingMode] = useState<"generate" | "remix">(
+    "generate"
+  );
+
+  // Shown when generation fails outright. There is deliberately NO fallback
+  // itinerary: a template plan presented as a real route would be worse than
+  // an honest error, so the traveller is told to try again instead.
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Confirmation shown after the traveller saves or removes an itinerary from
+  // inside the dialog. Held as the toast copy itself, so the render is trivial.
+  const [saveNotice, setSaveNotice] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const handleSaveChange = useCallback((isSaved: boolean) => {
+    setSaveNotice(
+      isSaved
+        ? {
+            title: localization.common.savedToastTitle,
+            message: localization.common.savedToastMessage,
+          }
+        : {
+            title: localization.common.removedToastTitle,
+            message: localization.common.removedToastMessage,
+          },
+    );
+  }, []);
+
+  const handleStartPlanning = () => {
+    setIsPlannerOpen(true);
+  };
+
+  const handleFormSubmit = async (request: TripRequest) => {
+    setIsGenerating(true);
+    setGeneratingMode("generate");
+    setGeneratingFor(request);
+    setLastSubmittedRequest(request);
+    setGenerationError(null);
+
+    const result = await generateItinerary(request, "generated");
+
+    if (result.ok) {
+      setCurrentItinerary(result.itinerary);
+      setIsModifyingForm(false);
+      setSelectedDay(1);
+      if (result.itinerary.stops?.length > 0) {
+        setActiveStopId(result.itinerary.stops[0].id);
+      }
+    } else {
+      // No fallback: surface the server's message (or a sensible default).
+      setGenerationError(
+        result.error || localization.homepage.errorGenerateFallback,
+      );
+    }
+
+    setIsGenerating(false);
+    setGeneratingFor(null);
+  };
+
+  const handleRemixTrip = async () => {
+    if (!lastSubmittedRequest && !currentItinerary) return;
+    setIsRemixing(true);
+
+    const baseRequest: TripRequest = lastSubmittedRequest || {
+      startingCity: currentItinerary!.startingCity,
+      mustVisitPlaces: currentItinerary!.mustVisitPlaces,
+      days: currentItinerary!.totalDays,
+      interests: ["cafe", "trek", "mountain"],
+      pace: currentItinerary!.pace,
+      transport: currentItinerary!.transport,
+    };
+
+    const variationRequest: TripRequest = {
+      ...baseRequest,
+      variationSeed: Date.now(),
+    };
+
+    // Show the same generating overlay as a first submit, so a remix reads as
+    // "recalculating" rather than the UI just freezing. `generatingFor` is what
+    // the overlay renders from, so it must be set here too — not only in
+    // handleFormSubmit.
+    setGeneratingMode("remix");
+    setGeneratingFor(variationRequest);
+    setGenerationError(null);
+
+    const result = await generateItinerary(variationRequest, "remix generated");
+
+    if (result.ok) {
+      setCurrentItinerary(result.itinerary);
+      setSelectedDay(1);
+      if (result.itinerary.stops?.length > 0) {
+        setActiveStopId(result.itinerary.stops[0].id);
+      }
+    } else {
+      setGenerationError(
+        result.error || localization.homepage.errorRemixFallback,
+      );
+    }
+
+    setIsRemixing(false);
+    setGeneratingFor(null);
+  };
+
+  const handleCancelModify = () => {
+    if (!currentItinerary) return;
+    setIsModifyingForm(false);
+    setFormInitialValues(null);
+    setSelectedDay(1);
+    if (currentItinerary.stops?.length > 0) {
+      setActiveStopId(currentItinerary.stops[0].id);
+    }
+  };
+
+  const handleFormReset = () => {
+    setCurrentItinerary(null);
+    setLastSubmittedRequest(null);
+    setActiveStopId(null);
+    setSelectedDay(1);
+    setGenerationError(null);
+  };
+
+  // "Discard & Close": abandon the whole session. Closes the dialog and clears
+  // every piece of planner state, so reopening shows a fresh, empty form rather
+  // than the itinerary or half-filled inputs the traveller just rejected.
+  const handleDiscardSession = useCallback(() => {
+    setIsPlannerOpen(false);
+    setFormInitialValues(null);
+    setIsModifyingForm(false);
+    setCurrentItinerary(null);
+    setLastSubmittedRequest(null);
+    setActiveStopId(null);
+    setSelectedDay(1);
+    setGenerationError(null);
+  }, []);
+
+  const handleSelectSavedItinerary = (saved: ItineraryData) => {
+    setCurrentItinerary(saved);
+    setLastSubmittedRequest(null);
+    setIsPlannerOpen(true);
+    setIsModifyingForm(false);
+    setSelectedDay(1);
+    if (saved.stops?.length > 0) {
+      setActiveStopId(saved.stops[0].id);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+      <Header onSelectSavedItinerary={handleSelectSavedItinerary} />
+      <HomePage onStartPlanning={handleStartPlanning} />
+      <ModalDialog
+        isOpen={isPlannerOpen}
+        onClose={handleClosePlanner}
+        /* The form view already renders its own "Configure Your Escape" heading, so
+           the modal title is only shown alongside the itinerary, avoiding two
+           stacked headings. */
+        title={
+          currentItinerary && !isModifyingForm
+            ? localization.homepage.plannerTitle
+            : undefined
+        }
+        subtitle={
+          currentItinerary && !isModifyingForm
+            ? localization.homepage.plannerSubtitle
+            : undefined
+        }
+        /* "Done" keeps whatever the dialog holds and just closes; "Discard &
+           Close" abandons the session and clears everything. Both are shown in
+           every view, so the dialog is always closed from the footer rather
+           than a floating icon. */
+        showOkButton
+        okButtonText={localization.common.done}
+        cancelButtonText={localization.common.discardAndClose}
+        onOk={handleClosePlanner}
+        onCancel={handleDiscardSession}
+        /* Compact chrome: the form carries its own submit, so the footer stays lean
+           and the always-on ESC hint line is dropped. */
+        compact
+        /* The map is an edge-to-edge side panel so it touches the dialog's top,
+           right and bottom corners instead of sitting in a padded, bordered box. */
+        sidePanel={
+          <MapComponent
+            stops={currentItinerary?.stops || []}
+            activeStopId={activeStopId}
+            selectedDay={selectedDay}
+            onSelectStop={(stop) => setActiveStopId(stop.id)}
+          />
+        }
+        /* Below lg the map is not pinned above the fold — it is rendered at the
+           end of the form so the traveller scrolls down to it. */
+        mobilePanel={
+          <MapComponent
+            stops={currentItinerary?.stops || []}
+            activeStopId={activeStopId}
+            selectedDay={selectedDay}
+            onSelectStop={(stop) => setActiveStopId(stop.id)}
+          />
+        }
+        footerLeft={
+          isModifyingForm && currentItinerary ? (
+            <Button
+              type="button"
+              variant="subtle"
+              onClick={handleCancelModify}
+              icon={<ArrowLeft className="w-3.5 h-3.5 text-sky-400" />}
+            >
+              {localization.homepage.backToItinerary}
+            </Button>
+          ) : undefined
+        }
+      >
+
+        <div className="relative">
+          {generatingFor && (
+            <GeneratingOverlay
+              mustVisitPlaces={generatingFor.mustVisitPlaces}
+              startingCity={generatingFor.startingCity}
+              interests={generatingFor.interests}
+              mode={generatingMode}
+            />
+          )}
+
+          <div className="min-w-0 space-y-6">
+            {currentItinerary && !isModifyingForm ? (
+              <ItineraryTimeline
+                itinerary={currentItinerary}
+                activeStopId={activeStopId}
+                selectedDay={selectedDay}
+                onSelectDay={(day) => setSelectedDay(day)}
+                onSelectStop={(stop: ItineraryStop) => setActiveStopId(stop.id)}
+                onModifyTrip={() => {
+                  setFormInitialValues(lastSubmittedRequest || {
+                    startingCity: currentItinerary.startingCity,
+                    mustVisitPlaces: currentItinerary.mustVisitPlaces,
+                    days: currentItinerary.totalDays,
+                    interests: [...new Set(currentItinerary.stops.map((stop) => stop.category))],
+                    pace: currentItinerary.pace,
+                    transport: currentItinerary.transport,
+                  });
+                  setIsModifyingForm(true);
+                }}
+                onRemixTrip={handleRemixTrip}
+                isRemixing={isRemixing}
+                onSaveChange={handleSaveChange}
+              />
+            ) : (
+              <ItineraryForm
+                key={
+                  formInitialValues
+                    ? `${formInitialValues.startingCity}-${formInitialValues.days}-${formInitialValues.interests.join(",")}-${(formInitialValues.mustVisitPlaces ?? []).join(",")}`
+                    : "default-form"
+                }
+                initialValues={formInitialValues}
+                onSubmit={handleFormSubmit}
+                onReset={handleFormReset}
+                isLoading={isGenerating}
+              />
+            )}
           </div>
-          <div className="lg:col-span-2">
-            <div className="w-full h-[550px] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
-              <MapComponent />
-            </div>
-          </div>
+
         </div>
-      </div>
-    </main>
+      </ModalDialog>
+      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+        <p>{t(localization.footer.copyright, { year: new Date().getFullYear() })}</p>
+      </footer>
+
+      {/* Transient failure notice. Fixed to the viewport so it is seen even
+          though the traveller is scrolled down at the form/map when the
+          generating overlay lifts. Shown only once the overlay is gone. */}
+      <Toast
+        message={generatingFor ? null : generationError}
+        title={localization.homepage.errorTitle}
+        onDismiss={() => setGenerationError(null)}
+        closeLabel={localization.common.dismiss}
+      />
+
+      {/* Save / remove confirmation, fired from the save button inside the
+          dialog. Independent of the error toast so the two can never conflict. */}
+      <Toast
+        variant="success"
+        message={saveNotice?.message ?? null}
+        title={saveNotice?.title}
+        onDismiss={() => setSaveNotice(null)}
+        closeLabel={localization.common.dismiss}
+      />
+    </div>
   );
 }
