@@ -64,6 +64,27 @@ export default function Home() {
   // an honest error, so the traveller is told to try again instead.
   const [generationError, setGenerationError] = useState<string | null>(null);
 
+  // Confirmation shown after the traveller saves or removes an itinerary from
+  // inside the dialog. Held as the toast copy itself, so the render is trivial.
+  const [saveNotice, setSaveNotice] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const handleSaveChange = useCallback((isSaved: boolean) => {
+    setSaveNotice(
+      isSaved
+        ? {
+            title: localization.common.savedToastTitle,
+            message: localization.common.savedToastMessage,
+          }
+        : {
+            title: localization.common.removedToastTitle,
+            message: localization.common.removedToastMessage,
+          },
+    );
+  }, []);
+
   const handleStartPlanning = () => {
     setIsPlannerOpen(true);
   };
@@ -279,6 +300,7 @@ export default function Home() {
                 }}
                 onRemixTrip={handleRemixTrip}
                 isRemixing={isRemixing}
+                onSaveChange={handleSaveChange}
               />
             ) : (
               <ItineraryForm
@@ -308,6 +330,16 @@ export default function Home() {
         message={generatingFor ? null : generationError}
         title={localization.homepage.errorTitle}
         onDismiss={() => setGenerationError(null)}
+        closeLabel={localization.common.dismiss}
+      />
+
+      {/* Save / remove confirmation, fired from the save button inside the
+          dialog. Independent of the error toast so the two can never conflict. */}
+      <Toast
+        variant="success"
+        message={saveNotice?.message ?? null}
+        title={saveNotice?.title}
+        onDismiss={() => setSaveNotice(null)}
         closeLabel={localization.common.dismiss}
       />
     </div>
