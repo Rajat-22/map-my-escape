@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -37,6 +37,7 @@ export interface ItineraryTimelineProps {
   onModifyTrip?: () => void;
   onRemixTrip?: () => void;
   isRemixing?: boolean;
+  onSaveChange?: (isSaved: boolean) => void;
 }
 
 export default function ItineraryTimeline({
@@ -48,20 +49,16 @@ export default function ItineraryTimeline({
   onModifyTrip,
   onRemixTrip,
   isRemixing = false,
+  onSaveChange,
 }: ItineraryTimelineProps) {
-  // Controlled or uncontrolled selected day. Defaults to the first day; there is
-  // no "all days" view, the traveller always sees one day at a time.
   const [internalSelectedDay, setInternalSelectedDay] = useState<number>(1);
   const selectedDay =
     controlledSelectedDay !== undefined
       ? controlledSelectedDay
       : internalSelectedDay;
 
-  // Places the traveler explicitly asked to include, in a non-optional shape
-  // so they can be rendered as chips without extra narrowing at each use.
   const mustVisitChips: string[] = itinerary.mustVisitPlaces ?? [];
 
-  // Subscribe to storage changes with stable snapshot
   const isSaved = useSyncExternalStore(
     subscribeToSavedItineraries,
     () => isItinerarySaved(itinerary.id, itinerary.tripTitle),
@@ -69,11 +66,13 @@ export default function ItineraryTimeline({
   );
 
   const handleToggleSave = () => {
+    const nextSaved = !isSaved;
     if (isSaved) {
       removeSavedItinerary(itinerary.id);
     } else {
       saveItinerary(itinerary);
     }
+    onSaveChange?.(nextSaved);
   };
 
   const handleDayChange = (dayNum: number) => {
@@ -84,8 +83,6 @@ export default function ItineraryTimeline({
     }
   };
 
-  // Show only the selected day. Falls back to the first day if the selected
-  // one is not present, so the list is never empty.
   const displayedDays = (() => {
     const match = itinerary.days.filter((d) => d.day === selectedDay);
     if (match.length > 0) return match;
@@ -208,8 +205,7 @@ export default function ItineraryTimeline({
                   : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700"
               }`}
             >
-              {/* A dot in this day's route colour, so an unselected tab is still
-                  identifiable as the colour of its line on the map. */}
+
               {!isActive && (
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -255,8 +251,6 @@ export default function ItineraryTimeline({
               </span>
             </div>
 
-            {/* Sequence of Stops for this Day. The left rail is tinted to the
-                day's route colour, so the list and the map line agree. */}
             <div
               className="space-y-2.5 relative pl-4 border-l-2 ml-3"
               style={{ borderLeftColor: getDayColor(dayPlan.day).hex }}
