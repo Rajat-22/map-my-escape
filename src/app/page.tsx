@@ -235,6 +235,9 @@ export default function Home() {
         /* Compact chrome: the form carries its own submit, so the footer stays lean
            and the always-on ESC hint line is dropped. */
         compact
+        /* The itinerary view gets its own travel palette on the whole body (title
+           included); the form stays on the plain slate panel. */
+        contentTone={currentItinerary && !isModifyingForm ? "themed" : "default"}
         /* The map is an edge-to-edge side panel so it touches the dialog's top,
            right and bottom corners instead of sitting in a padded, bordered box. */
         sidePanel={
