@@ -1,0 +1,98 @@
+{
+  "models": {
+    "candidates": [
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-flash-latest"
+    ],
+    "attemptsPerModel": 2,
+    "retryDelayMs": 800,
+    "sweeps": 2,
+    "sweepBackoffMs": 2500,
+    "maxSweepBackoffMs": 8000
+  },
+  "budget": {
+    "totalBudgetMs": 120000,
+    "attemptTimeoutMs": 120000,
+    "minAttemptRemainingMs": 1000,
+    "minRemainingBeforeRetryMs": 3000
+  },
+  "generation": {
+    "temperature": 0.7,
+    "maxOutputTokens": 16384,
+    "responseMimeType": "application/json"
+  },
+  "limits": {
+    "minDays": 1,
+    "maxDays": 7,
+    "defaultDays": 3,
+    "maxMustVisitPlaces": 20
+  },
+  "defaults": {
+    "pace": "moderate",
+    "transport": "Scooter & Local Cab",
+    "interests": [
+      "cafe",
+      "viewpoint",
+      "trek"
+    ]
+  },
+  "categories": [
+    "temple",
+    "cafe",
+    "trek",
+    "mountain",
+    "waterfall",
+    "beach",
+    "hotel",
+    "viewpoint",
+    "heritage",
+    "market",
+    "other"
+  ],
+  "paceStops": {
+    "relaxed": "4 stops per day",
+    "moderate": "6-7 stops per day",
+    "fast": "8-9 stops per day"
+  },
+  "labels": {
+    "fallbackDayTitle": "Day {day}",
+    "fallbackDayTheme": "Exploration"
+  },
+  "prompt": {
+    "role": "You are MapMyEscape, an expert spontaneous travel planner. Generate a realistic, spatially sequenced day-by-day travel itinerary for:",
+    "requestHeader": [
+      "- Destination / Starting Location: {startingCity}",
+      "- Duration: {days} Days",
+      "- Preferred Vibes / Interests: {interests}",
+      "- Pace: {pace} ({paceStops})",
+      "- Primary Transport: {transport}"
+    ],
+    "customNotesLine": "- Special Requests: {customNotes}",
+    "mustVisitBlock": "\nMUST-INCLUDE PLACES the traveler typed (their spelling may be wrong — see rule 8):\n{mustVisitList}\nEvery one MUST appear as a stop in the itinerary. Distribute them sensibly across the days so the route stays geographically coherent, and fill the remaining slots with other great nearby spots.",
+    "schemaIntro": "Return valid JSON strictly matching this schema:",
+    "schemaTemplate": "{\n  \"id\": \"escape-unique-id\",\n  \"tripTitle\": \"2-5 word title naming the place(s). Use the real place names the traveler gave. e.g. \\\"Rishikesh & Mussoorie\\\", \\\"Goa\\\", \\\"Amritsar to Manali\\\". No taglines, no poetry, no length.\",\n  \"startingCity\": \"{startingCity}\",\n  \"mustVisitPlaces\": {mustVisitJson},\n  \"destinationSummary\": \"MAX 1 short sentence, under 15 words. Plain and factual. e.g. \\\"Cafes, temples and cliff views around Goa.\\\" No marketing, no flowery language.\",\n  \"totalDays\": {days},\n  \"pace\": \"{pace}\",\n  \"transport\": \"{transport}\",\n  \"highlights\": [\"3 highlights, 3-6 words each\"],\n  \"packingTips\": [\"3 items, 1-3 words each\"],\n  \"days\": [\n    {\n      \"day\": 1,\n      \"title\": \"Short 2-4 word label for the day, e.g. \\\"Beaches & Cafes\\\" or \\\"Old Town Walk\\\". NO \\\"Day 1:\\\" prefix, no sentences.\",\n      \"theme\": \"2-4 words only, e.g. \\\"Cafes & coast\\\".\",\n      \"stops\": [\n        {\n          \"id\": \"stop-1-1\",\n          \"day\": 1,\n          \"order\": 1,\n          \"timeOfDay\": \"Morning\",\n          \"name\": \"Specific real location name\",\n          \"category\": \"{categoryList}\",\n          \"lat\": 0.0,\n          \"lng\": 0.0,\n          \"estimatedDuration\": \"e.g. 1.5 hours\",\n          \"travelTimeFromPrevious\": \"e.g. 15 min via scooter\",\n          \"description\": \"MAX 1 short sentence, under 15 words. Plain and useful, not a blog. e.g. \\\"Cliffside cafe with sea views and good coffee.\\\"\",\n          \"insiderTip\": \"MAX 10 words. One practical tip only.\",\n          \"bestTimeToVisit\": \"Morning\"\n        }\n      ]\n    }\n  ]\n}",
+    "rulesHeader": "CRITICAL RULES:",
+    "rules": [
+      "Coordinates (\"lat\" and \"lng\") MUST be accurate, valid floating-point numbers (numbers, never strings, never null, never NaN) for real places near {startingCity}.",
+      "Ensure realistic route sequence so user travels smoothly from one stop to the next.",
+      "Every stop must have a category from: {categoryList}.",
+      "Output must be a single raw JSON object. Do not wrap it in markdown fences or add commentary.",
+      "Every stop must include the keys: id, day, order, timeOfDay, name, category, lat, lng, estimatedDuration, description, insiderTip.",
+      "Reflect EVERY entry in \"mustVisitPlaces\" as an actual stop in \"days\". Never silently drop one.",
+      "\"mustVisitPlaces\" in your output MUST be the SAME list you were given above, in the same order, but with each name corrected to the real, properly-spelled and properly-capitalised name of that place near {startingCity}. Fix typos, wrong casing and phonetic spellings (e.g. \"ram jhuls\" -> \"Ram Jhula\", \"neelkanth mahadev\" -> \"Neelkanth Mahadev Temple\"). This list is shown back to the traveler, so it must look right. If a name is already correct, or you cannot confidently identify the place, return it unchanged rather than inventing a name.",
+      "Use those same corrected names for the corresponding stops in \"days\", so the itinerary and the list agree.",
+      "\"days\" MUST contain exactly one entry for EVERY day of the trip, in order — {days} entries numbered 1 through {days}. Never return only the first day. Each stop's \"day\" must match the \"day\" of the entry it sits in.",
+      "BE SHORT EVERYWHERE. This is a quick reference, not a travel blog. \"tripTitle\" = 2-5 words of real place names. \"destinationSummary\" = one line under 15 words. Each day \"title\" = 2-4 words with NO \"Day N:\" prefix. Each day \"theme\" = 2-4 words. Each stop \"description\" = one line under 15 words. Each \"insiderTip\" = under 10 words. No adjectives for their own sake, no flowing sentences, no scene-setting."
+    ]
+  },
+  "errors": {
+    "invalidPayload": "Invalid JSON request payload.",
+    "missingStartingCity": "Starting city is required.",
+    "timeout": "We couldn't finish building your itinerary in time. Please try again.",
+    "busy": "Our trip planner is a bit overloaded right now. Please try again in a few seconds — it usually works on the next try.",
+    "notConfigured": "Itinerary generation is not configured on this server."
+  },
+  "transientPattern": "aborted|timeout|503|502|504|429|high demand|overloaded|fetch failed",
+  "busyPattern": "503|429|high demand|overloaded|service unavailable|resource_exhausted"
+}
