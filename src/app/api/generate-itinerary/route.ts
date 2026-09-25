@@ -1,4 +1,4 @@
-﻿﻿import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TripRequest, ItineraryData } from "@/types/itinerary";
 import {
@@ -106,7 +106,7 @@ function toItinerary(
 export async function GET() {
   return NextResponse.json({
     status: "ok",
-    message: "MapMyEscape AI Generator Engine is ready and operational.",
+    message: "Escape-Route AI Generator Engine is ready and operational.",
     keyConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
     supportedModels: candidateModels,
   });

@@ -1,26 +1,12 @@
 import { ItineraryData } from "@/types/itinerary";
 
-const STORAGE_KEY = "mapmyescape_saved_itineraries_v1";
+const STORAGE_KEY = "escaperoute_saved_itineraries_v1";
 
-/**
- * Retired transport options that were later merged, mapped to their replacement.
- *
- * "Cab / Taxi" and "Self-Drive Car" were two options for the same thing and are
- * now one ("Car / Cab / Taxi"). Itineraries saved before that change still store
- * the old wording, so it is normalised on read — otherwise the timeline's
- * "Transport:" pill would show text the form can no longer produce.
- */
 const LEGACY_TRANSPORT_MAP: Record<string, string> = {
   "Cab / Taxi": "Car / Cab / Taxi",
   "Self-Drive Car": "Car / Cab / Taxi",
 };
 
-/**
- * Rewrite any retired transport wording to its current equivalent. Accepts the
- * stored form (a `", "`-joined string) and returns the same shape, so callers
- * and the UI are unchanged — only the words differ. Already-current values, and
- * any unknown text, are passed through untouched.
- */
 export function normalizeTransport(transport: string): string {
   if (!transport) return transport;
   const mapped = transport
@@ -31,7 +17,6 @@ export function normalizeTransport(transport: string): string {
   return [...new Set(mapped)].join(", ");
 }
 
-/** Apply the stored-itinerary migrations to a single record. */
 function migrateItinerary(itinerary: ItineraryData): ItineraryData {
   const normalized = normalizeTransport(itinerary.transport);
   return normalized === itinerary.transport

@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "MapMyEscape",
+    "name": "Escape-Route",
     "taglinePrefix": "Ditch the Rigid Itinerary.",
     "taglineHighlight": "Escape",
     "taglineSuffix": "Your Way.",
@@ -37,7 +37,7 @@
   },
   "header": {
     "cta": "Build Your Escape",
-    "howItWorks": "How MapMyEscape Works",
+    "howItWorks": "How Escape-Route Works",
     "stepLabel": "STEP {step}"
   },
   "homepage": {
@@ -51,10 +51,10 @@
     "errorUnreachable": "We couldn't reach the itinerary service. Check your connection and try again."
   },
   "footer": {
-    "copyright": "MapMyEscape © {year} — Dynamic Travel Routes & Real-Time Geospatial Visualization"
+    "copyright": "Escape-Route © {year} — Dynamic Travel Routes & Real-Time Geospatial Visualization"
   },
   "metadata": {
-    "title": "MapMyEscape | Dynamic Travel Route Planner",
+    "title": "Escape-Route | Dynamic Travel Route Planner",
     "description": "Generate personalized travel itineraries with real-time route visualization on interactive maps."
   },
   "form": {

@@ -60,7 +60,7 @@
     "fallbackDayTheme": "Exploration"
   },
   "prompt": {
-    "role": "You are MapMyEscape, an expert spontaneous travel planner. Generate a realistic, spatially sequenced day-by-day travel itinerary for:",
+    "role": "You are Escape-Route, an expert spontaneous travel planner. Generate a realistic, spatially sequenced day-by-day travel itinerary for:",
     "requestHeader": [
       "- Destination / Starting Location: {startingCity}",
       "- Duration: {days} Days",
