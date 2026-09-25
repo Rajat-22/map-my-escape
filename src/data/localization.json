@@ -73,7 +73,9 @@
     "durationUnitSingular": "Day",
     "durationUnitPlural": "Days",
     "paceLabel": "Travel Pace",
-    "transportLabel": "Preferred Transport",
+    "transportLabel": "Preferred Transport ({count} selected)",
+    "transportHintEmpty": "Tap to pick one or more",
+    "transportHintToggle": "Tap to add or remove",
     "notesLabel": "Special Requests / Custom Notes (Optional)",
     "notesPlaceholder": "e.g. Vegetarian food only, love photography spots, prefer quiet mornings...",
     "submit": "Generate Escape Route",
@@ -95,8 +97,7 @@
     "transportOptions": {
       "walkingTuktuk": "Walking & TukTuk",
       "scooter": "Rented Scooter",
-      "cab": "Cab / Taxi",
-      "selfDrive": "Self-Drive Car"
+      "car": "Car / Cab / Taxi"
     }
   },
   "timeline": {
