@@ -29,6 +29,7 @@ import { Field } from "@/components/ui/Field";
 import { OptionButton } from "@/components/ui/OptionButton";
 import siteContent from "@/data/siteContent.json";
 import { localization, t } from "@/lib/localization";
+import { normalizeTransport } from "@/lib/storage";
 import { TripRequest } from "@/types/itinerary";
 
 export interface ItineraryFormProps {
@@ -54,8 +55,7 @@ const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
 const TRANSPORT_OPTIONS = [
   { label: localization.form.transportOptions.walkingTuktuk, icon: Walk },
   { label: localization.form.transportOptions.scooter, icon: Compass },
-  { label: localization.form.transportOptions.cab, icon: Car },
-  { label: localization.form.transportOptions.selfDrive, icon: Car },
+  { label: localization.form.transportOptions.car, icon: Car },
 ];
 
 const PACE_OPTIONS: Array<{
@@ -100,9 +100,19 @@ export default function ItineraryForm({
   const [pace, setPace] = useState<"relaxed" | "moderate" | "fast">(
     () => initialValues?.pace ?? "moderate"
   );
-  const [transport, setTransport] = useState(
-    () => initialValues?.transport ?? localization.form.transportOptions.walkingTuktuk
-  );
+  const [transport, setTransport] = useState<string[]>(() => {
+    // A trip may use more than one mode, so transport is a list. The stored form
+    // is a `", "`-joined string, which `normalizeTransport` also migrates for
+    // retired options (the two old car entries were merged into one), so an
+    // older saved itinerary or a remix still highlights the right chip.
+    const saved = initialValues?.transport;
+    if (!saved) return [localization.form.transportOptions.walkingTuktuk];
+
+    const normalized = normalizeTransport(
+      Array.isArray(saved) ? saved.join(", ") : saved,
+    );
+    return normalized.split(",").map((s) => s.trim()).filter(Boolean);
+  });
   const [customNotes, setCustomNotes] = useState(
     () => initialValues?.customNotes ?? ""
   );
@@ -128,6 +138,15 @@ export default function ItineraryForm({
     );
   };
 
+  // Transport is multi-select: a traveller may walk, then take a cab.
+  const toggleTransport = (option: string) => {
+    setTransport((prev) =>
+      prev.includes(option)
+        ? prev.filter((t) => t !== option)
+        : [...prev, option]
+    );
+  };
+
   const handleReset = () => {
     setStartingCity("");
     setPlaces([]);
@@ -135,7 +154,7 @@ export default function ItineraryForm({
     setDays(3);
     setInterests([]);
     setPace("moderate");
-    setTransport(localization.form.transportOptions.walkingTuktuk);
+    setTransport([localization.form.transportOptions.walkingTuktuk]);
     setCustomNotes("");
     onReset?.();
   };
@@ -158,13 +177,18 @@ export default function ItineraryForm({
       days,
       interests: interests.length > 0 ? interests : ["cafe", "viewpoint"],
       pace,
-      transport,
+      // Never submit an empty list: keep the traveller's picks, or fall back to
+      // the default single mode so the AI always has transport to plan around.
+      transport:
+        transport.length > 0
+          ? transport.join(", ")
+          : localization.form.transportOptions.walkingTuktuk,
       customNotes: customNotes.trim() || undefined,
     });
   };
 
   return (
-    <div>
+    <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
           <div>
@@ -200,8 +224,8 @@ export default function ItineraryForm({
             placeholder={localization.form.startingCityPlaceholder}
           />
 
-          <div>
-            <div className="flex items-stretch gap-2">
+          <div className="w-full">
+            <div className="flex w-full items-end gap-2">
               <Field
                 id="place-input"
                 label={t(localization.form.placesLabel, { count: places.length })}
@@ -225,7 +249,7 @@ export default function ItineraryForm({
                 }}
                 placeholder={localization.form.placesPlaceholder}
                 autoComplete="off"
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
               <Button
                 type="button"
@@ -234,7 +258,7 @@ export default function ItineraryForm({
                 disabled={!placeInput.trim()}
                 aria-label={localization.common.addPlaceAria}
                 icon={<Plus className="w-3.5 h-3.5" />}
-                className="self-end"
+                className="shrink-0"
               >
                 {localization.common.add}
               </Button>
@@ -363,20 +387,27 @@ export default function ItineraryForm({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-            <Car className="w-4 h-4 text-emerald-400" />
-            {localization.form.transportLabel}
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <Car className="w-4 h-4 text-emerald-400" />
+              {t(localization.form.transportLabel, { count: transport.length })}
+            </label>
+            <span className="text-[11px] text-slate-500">
+              {transport.length === 0
+                ? localization.form.transportHintEmpty
+                : localization.form.transportHintToggle}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
             {TRANSPORT_OPTIONS.map((opt) => {
               const IconComp = opt.icon;
               return (
                 <OptionButton
                   key={opt.label}
-                  selected={transport === opt.label}
+                  selected={transport.includes(opt.label)}
                   accent="emerald"
                   layout="stack"
-                  onClick={() => setTransport(opt.label)}
+                  onClick={() => toggleTransport(opt.label)}
                   icon={<IconComp className="w-3.5 h-3.5" />}
                 >
                   {opt.label}
