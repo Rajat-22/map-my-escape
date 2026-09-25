@@ -26,14 +26,14 @@ export const DAY_COLORS: Array<{
   muted: string;
 }> = [
   {
-    hex: "#38bdf8", // Day 1: Sky 400
-    solid: "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20",
-    muted: "bg-sky-500/20 border-sky-400/40 text-sky-300",
+    hex: "#22d3ee", // Day 1: Cyan 400 — the brand's lead route colour
+    solid: "bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/25",
+    muted: "bg-cyan-500/20 border-cyan-400/40 text-cyan-300",
   },
   {
-    hex: "#a78bfa", // Day 2: Violet 400 — kept off teal so it never blends into the travel panel
-    solid: "bg-violet-400 text-slate-950 shadow-md shadow-violet-500/20",
-    muted: "bg-violet-500/20 border-violet-400/40 text-violet-300",
+    hex: "#818cf8", // Day 2: Indigo 400 — kept off teal so it never blends into the travel panel
+    solid: "bg-indigo-400 text-slate-950 shadow-md shadow-indigo-500/25",
+    muted: "bg-indigo-500/20 border-indigo-400/40 text-indigo-300",
   },
   {
     hex: "#fbbf24", // Day 3: Amber 400
@@ -56,9 +56,9 @@ export const DAY_COLORS: Array<{
     muted: "bg-orange-500/20 border-orange-400/40 text-orange-300",
   },
   {
-    hex: "#818cf8", // Day 7: Indigo 400
-    solid: "bg-indigo-400 text-slate-950 shadow-md shadow-indigo-500/20",
-    muted: "bg-indigo-500/20 border-indigo-400/40 text-indigo-300",
+    hex: "#c084fc", // Day 7: Purple 400 — the far end of the indigo→cyan brand ramp
+    solid: "bg-purple-400 text-slate-950 shadow-md shadow-purple-500/25",
+    muted: "bg-purple-500/20 border-purple-400/40 text-purple-300",
   },
 ];
 
@@ -92,10 +92,10 @@ export const CATEGORY_COLOR_MAP: Record<
     hex: "#f59e0b",
   },
   cafe: {
-    bg: "bg-rose-500/10",
-    text: "text-rose-400",
-    border: "border-rose-500/30",
-    hex: "#f43f5e",
+    bg: "bg-violet-500/10",
+    text: "text-violet-400",
+    border: "border-violet-500/30",
+    hex: "#a855f7",
   },
   trek: {
     bg: "bg-emerald-500/10",
@@ -110,16 +110,16 @@ export const CATEGORY_COLOR_MAP: Record<
     hex: "#0ea5e9",
   },
   waterfall: {
+    bg: "bg-sky-500/10",
+    text: "text-sky-400",
+    border: "border-sky-500/30",
+    hex: "#0ea5e9",
+  },
+  beach: {
     bg: "bg-cyan-500/10",
     text: "text-cyan-400",
     border: "border-cyan-500/30",
-    hex: "#06b6d4",
-  },
-  beach: {
-    bg: "bg-blue-500/10",
-    text: "text-blue-400",
-    border: "border-blue-500/30",
-    hex: "#3b82f6",
+    hex: "#22d3ee",
   },
   hotel: {
     bg: "bg-violet-500/10",

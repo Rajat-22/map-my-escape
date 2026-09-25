@@ -23,13 +23,13 @@ const VARIANTS: Record<
   },
   success: {
     icon: CheckCircle2,
-    wrapper: "border-teal-500/40",
-    iconClass: "text-teal-400",
-    titleClass: "text-teal-200",
-    bodyClass: "text-teal-100/80",
-    barTrack: "bg-teal-500/20",
-    barFill: "bg-teal-400/70",
-    closeClass: "text-teal-200/70 hover:bg-teal-500/20",
+    wrapper: "border-sky-500/40",
+    iconClass: "text-sky-400",
+    titleClass: "text-sky-200",
+    bodyClass: "text-sky-100/80",
+    barTrack: "bg-sky-500/20",
+    barFill: "bg-sky-400/70",
+    closeClass: "text-sky-200/70 hover:bg-sky-500/20",
   },
 };
 

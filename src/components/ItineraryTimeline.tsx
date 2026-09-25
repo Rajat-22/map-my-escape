@@ -1,4 +1,4 @@
-﻿﻿"use client";
+﻿"use client";
 
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -93,9 +93,9 @@ export default function ItineraryTimeline({
     <div className="relative space-y-6">
       <Card
         variant="glass"
-        className="p-5 border-teal-500/30 bg-teal-950/25 ring-1 ring-teal-400/10 shadow-xl shadow-teal-950/40"
+        className="p-5 border-sky-500/30 bg-slate-900/60 ring-1 ring-sky-400/10 shadow-xl shadow-sky-950/40"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-teal-500/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-sky-500/20">
           <div>
             <h2 className="text-xl font-bold text-white tracking-tight">
               {itinerary.tripTitle}
@@ -109,12 +109,12 @@ export default function ItineraryTimeline({
               onClick={handleToggleSave}
               icon={
                 isSaved ? (
-                  <BookmarkCheck className="w-3.5 h-3.5 text-teal-400" />
+                  <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" />
                 ) : (
                   <Bookmark className="w-3.5 h-3.5 text-slate-400" />
                 )
               }
-              className={isSaved ? "border-teal-500/40 bg-teal-950/20 text-teal-300" : ""}
+              className={isSaved ? "border-sky-500/40 bg-sky-950/20 text-sky-300" : ""}
             >
               {isSaved ? localization.common.saved : localization.timeline.saveEscape}
             </Button>
@@ -145,13 +145,13 @@ export default function ItineraryTimeline({
         </div>
 
         {/* Destination Summary */}
-        <p className="mt-3 text-xs sm:text-sm text-teal-50/80 leading-relaxed">
+        <p className="mt-3 text-xs sm:text-sm text-slate-300/90 leading-relaxed">
           {itinerary.destinationSummary}
         </p>
 
         {/* Quick Meta Pills */}
-        <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-teal-500/20 text-xs text-slate-300">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-950/50 border border-teal-500/25">
+        <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-sky-500/20 text-xs text-slate-300">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/50 border border-sky-500/25">
             <Compass className="w-3.5 h-3.5 text-sky-400" />
             <span>
               {localization.timeline.pacePrefix}{" "}
@@ -161,8 +161,8 @@ export default function ItineraryTimeline({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-950/50 border border-teal-500/25">
-            <Navigation className="w-3.5 h-3.5 text-teal-300" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/50 border border-sky-500/25">
+            <Navigation className="w-3.5 h-3.5 text-cyan-300" />
             <span>
               {localization.timeline.transportPrefix}{" "}
               <strong className="text-slate-100">{itinerary.transport}</strong>
@@ -173,16 +173,16 @@ export default function ItineraryTimeline({
         {/* Must-visit places the traveler asked for, echoed back as chips */}
         {mustVisitChips.length > 0 && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-300 shrink-0">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 shrink-0">
               <Sparkles className="w-3.5 h-3.5" />
               {localization.timeline.mustVisitsLabel}
             </span>
             {mustVisitChips.map((place) => (
               <span
                 key={place}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-200 border-teal-500/40 text-[11px] font-medium"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-100 border-cyan-500/40 text-[11px] font-medium"
               >
-                <MapPin className="w-3 h-3 text-teal-400 shrink-0" />
+                <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
                 {place}
               </span>
             ))}
@@ -204,7 +204,7 @@ export default function ItineraryTimeline({
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 border ${
                 isActive
                   ? dayColor.solid
-                  : "bg-teal-950/40 text-teal-200/80 border-teal-500/20 hover:text-white hover:border-teal-400/50"
+                  : "bg-slate-900/60 text-slate-300 border-slate-700/70 hover:text-white hover:border-sky-400/50"
               }`}
             >
 
@@ -219,7 +219,7 @@ export default function ItineraryTimeline({
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                   isActive
                     ? "bg-slate-950/30 text-slate-950"
-                    : "bg-slate-900/60 text-teal-200/70"
+                    : "bg-slate-950/60 text-slate-300"
                 }`}
               >
                 {day.stops.length}
@@ -245,10 +245,10 @@ export default function ItineraryTimeline({
                   <h3 className="text-sm font-bold text-white">
                     {dayPlan.title}
                   </h3>
-                  <p className="text-[11px] text-teal-100/60">{dayPlan.theme}</p>
+                  <p className="text-[11px] text-slate-400">{dayPlan.theme}</p>
                 </div>
               </div>
-              <span className="text-xs text-teal-100/50 font-mono">
+              <span className="text-xs text-slate-400 font-mono">
                 {dayPlan.stops.length} {localization.common.stops}
               </span>
             </div>
@@ -288,20 +288,20 @@ export default function ItineraryTimeline({
                     {/* Transit Connector Note */}
                     {idx > 0 && stop.travelTimeFromPrevious && (
                       <div className="text-[10px] text-slate-500 flex items-center gap-1.5 py-1 font-mono">
-                        <Navigation className="w-3 h-3 text-teal-400" />
+                        <Navigation className="w-3 h-3 text-cyan-400" />
                         <span>{stop.travelTimeFromPrevious}</span>
                       </div>
                     )}
 
                     {/* Stop Detail Card — when this stop is the active one its
                         border and glow take the DAY's colour, so a Day 3 stop
-                        rings amber, a Day 2 stop violet, and so on. */}
+                        rings amber, a Day 2 stop indigo, and so on. */}
                     <div
                       onClick={() => onSelectStop?.(stop)}
                       className={`cursor-pointer rounded-xl border p-4 transition-all duration-200 select-none backdrop-blur-sm ${
                         isActive
-                          ? "bg-teal-800/45 shadow-xl"
-                          : "bg-teal-950/45 border-teal-500/20 hover:bg-teal-900/45"
+                          ? "bg-slate-800/70 shadow-xl"
+                          : "bg-slate-900/60 border-slate-700/60 hover:bg-slate-800/60"
                       }`}
                       style={
                         isActive
@@ -315,7 +315,7 @@ export default function ItineraryTimeline({
                       {/* Top Row: Time Badge, Category Badge & Duration */}
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-slate-950/60 text-teal-100/90 font-semibold border border-teal-500/30">
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-slate-950/60 text-slate-200 font-semibold border border-slate-700/60">
                             {t(localization.timeline.stopBadge, {
                               order: stop.order,
                               timeOfDay: stop.timeOfDay,
@@ -329,8 +329,8 @@ export default function ItineraryTimeline({
                           </span>
                         </div>
 
-                        <span className="text-[11px] text-teal-100/60 font-mono flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-teal-400/70" />
+                        <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-cyan-400/70" />
                           {stop.estimatedDuration}
                         </span>
                       </div>
@@ -345,14 +345,14 @@ export default function ItineraryTimeline({
                           className={`w-4 h-4 transition-transform ${
                             isActive
                               ? "translate-x-1"
-                              : "text-teal-500/50 group-hover:translate-x-0.5"
+                              : "text-slate-600 group-hover:translate-x-0.5"
                           }`}
                           style={isActive ? { color: dayColor.hex } : undefined}
                         />
                       </h4>
 
                       {/* Stop Description */}
-                      <p className="mt-1 text-xs text-teal-100/70 leading-relaxed">
+                      <p className="mt-1 text-xs text-slate-300/80 leading-relaxed">
                         {stop.description}
                       </p>
 
@@ -383,13 +383,13 @@ export default function ItineraryTimeline({
         {itinerary.highlights && itinerary.highlights.length > 0 && (
           <Card
             variant="glass"
-            className="p-4 border-teal-500/25 bg-teal-950/25 shadow-lg shadow-teal-950/30"
+            className="p-4 border-sky-500/25 bg-slate-900/60 shadow-lg shadow-sky-950/30"
           >
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               {localization.timeline.highlightsTitle}
             </h4>
-            <ul className="space-y-1.5 text-xs text-teal-50/80">
+            <ul className="space-y-1.5 text-xs text-slate-300/90">
               {itinerary.highlights.map((h, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="text-sky-400 font-bold">&bull;</span>
@@ -404,16 +404,16 @@ export default function ItineraryTimeline({
         {itinerary.packingTips && itinerary.packingTips.length > 0 && (
           <Card
             variant="glass"
-            className="p-4 border-teal-500/25 bg-teal-950/25 shadow-lg shadow-teal-950/30"
+            className="p-4 border-sky-500/25 bg-slate-900/60 shadow-lg shadow-sky-950/30"
           >
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Luggage className="w-3.5 h-3.5 text-teal-400" />
+              <Luggage className="w-3.5 h-3.5 text-cyan-400" />
               {localization.timeline.packingTitle}
             </h4>
-            <ul className="space-y-1.5 text-xs text-teal-50/80">
+            <ul className="space-y-1.5 text-xs text-slate-300/90">
               {itinerary.packingTips.map((tip, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
                   <span>{tip}</span>
                 </li>
               ))}

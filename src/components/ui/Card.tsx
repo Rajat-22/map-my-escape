@@ -20,7 +20,7 @@ export function Card({
     interactive:
       "bg-slate-900/70 hover:bg-slate-800/80 backdrop-blur-md border border-slate-800 hover:border-slate-700 text-slate-100 shadow-md hover:shadow-xl cursor-pointer active:scale-[0.99]",
     active:
-      "bg-slate-800/90 border-2 border-sky-400 text-slate-100 shadow-xl shadow-sky-500/10",
+      "bg-slate-800/90 border-2 border-sky-400 text-slate-100 shadow-xl shadow-sky-500/15",
   }[variant];
 
   return (

@@ -27,11 +27,11 @@ const ICON_INTERVAL_MS = 1500;
 
 const ICONS: Array<{ Icon: LucideIcon; tone: string }> = [
   { Icon: Sun, tone: "text-amber-300" },
-  { Icon: Cloud, tone: "text-sky-200" },
-  { Icon: Mountain, tone: "text-slate-200" },
+  { Icon: Cloud, tone: "text-slate-200" },
+  { Icon: Mountain, tone: "text-indigo-300" },
   { Icon: Trees, tone: "text-emerald-400" },
   { Icon: Waves, tone: "text-cyan-300" },
-  { Icon: Bird, tone: "text-rose-300" },
+  { Icon: Bird, tone: "text-sky-300" },
 ];
 
 export default function GeneratingOverlay({
@@ -131,7 +131,7 @@ export default function GeneratingOverlay({
 
           {/* ---------- c. Progress bar ---------- */}
           <div className="mx-auto mt-5 h-1 w-full max-w-xs overflow-hidden rounded-full bg-slate-800">
-            <div className="gen-bar h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-400 to-emerald-400" />
+            <div className="gen-bar h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400" />
           </div>
         </div>
       </div>

@@ -1,11 +1,11 @@
 import React from "react";
 
-export type OptionAccent = "sky" | "teal" | "emerald";
+export type OptionAccent = "sky" | "cyan" | "indigo";
 
 const ACCENT_SELECTED: Record<OptionAccent, string> = {
   sky: "bg-sky-500/20 text-sky-300 border-sky-400 shadow-sm shadow-sky-500/20",
-  teal: "bg-teal-500/20 text-teal-300 border-teal-400",
-  emerald: "bg-emerald-500/20 text-emerald-300 border-emerald-400",
+  cyan: "bg-cyan-500/20 text-cyan-300 border-cyan-400",
+  indigo: "bg-indigo-500/20 text-indigo-300 border-indigo-400",
 };
 
 const IDLE = "bg-slate-950/60 text-slate-400 border-slate-800 hover:border-slate-700";

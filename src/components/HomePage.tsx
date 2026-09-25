@@ -29,7 +29,7 @@ export default function HomePage({
       case "Sparkles":
         return <Sparkles className="w-5 h-5 text-amber-400" />;
       case "MapPin":
-        return <MapPin className="w-5 h-5 text-teal-400" />;
+        return <MapPin className="w-5 h-5 text-cyan-400" />;
       default:
         return <Globe className="w-5 h-5 text-sky-400" />;
     }
@@ -46,7 +46,7 @@ export default function HomePage({
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
               {localization.brand.taglinePrefix}{" "}
-              <span className="bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-400 via-sky-300 to-cyan-300 bg-clip-text text-transparent">
                 {localization.brand.taglineHighlight}
               </span>{" "}
               {localization.brand.taglineSuffix}
@@ -83,7 +83,7 @@ export default function HomePage({
               <Card
                 key={step.step}
                 variant="glass"
-                className="p-6 relative group hover:border-sky-500/40 transition-colors"
+                className="p-6 relative group hover:border-sky-500/50 transition-colors"
               >
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-xl bg-slate-800/80 border-slate-700/60 shadow-inner group-hover:scale-105 transition-transform">
