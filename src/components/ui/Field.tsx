@@ -58,18 +58,20 @@ export function Field({
     .join(" ");
 
   return (
-    <div className={className}>
+    <div className={`min-w-0 ${className}`}>
       {label && (
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 mb-1.5">
           <label
             htmlFor={id}
-            className="text-xs font-semibold text-slate-300 flex items-center gap-1.5"
+            className="min-w-0 text-xs font-semibold text-slate-300 flex items-center gap-1.5"
           >
             {icon}
-            {label}
+            <span className="min-w-0">{label}</span>
             {required && <span className="text-rose-400">*</span>}
           </label>
-          {hint && <span className="text-[11px] text-slate-500">{hint}</span>}
+          {hint && (
+            <span className="text-[11px] text-slate-500 shrink-0">{hint}</span>
+          )}
         </div>
       )}
 
