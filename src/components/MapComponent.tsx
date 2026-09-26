@@ -93,18 +93,10 @@ function createCategoryMarkerIcon(
   });
 }
 
-// Map controls stacked in the top-right: zoom in, zoom out, then a fit-to-view
-// button directly beneath them. Rendered inside the MapContainer so they can
-// reach the map instance through useMap(); Leaflet's built-in zoom control is
-// turned off (`zoomControl={false}`) so these are the only zoom buttons.
 function MapControls({ stops }: { stops: ItineraryStop[] }) {
   const map = useMap();
 
   const handleFit = () => {
-    // Guard against stops with missing/non-finite coordinates: a saved itinerary
-    // can carry incomplete data, and L.latLngBounds throws "Invalid LatLng
-    // object: (NaN, NaN)" rather than skipping such a stop. Filter first, then
-    // fall back to the default view when nothing usable remains.
     const safeStops = stops.filter(
       (s) => Number.isFinite(s?.lat) && Number.isFinite(s?.lng)
     );
@@ -119,12 +111,8 @@ function MapControls({ stops }: { stops: ItineraryStop[] }) {
   };
 
   const buttonClass =
-    "flex h-8 w-8 items-center justify-center border-slate-700 bg-slate-900/95 text-slate-200 text-lg font-bold leading-none transition-colors hover:bg-slate-800 hover:text-sky-300 cursor-pointer";
+    "flex h-8 w-8 items-center justify-center border-slate-700 bg-slate-900/95 text-slate-200 text-lg font-bold leading-none transition-colors hover:bg-slate-800 hover:text-cyan-300 cursor-pointer";
 
-  // Pressing a button normally focuses it, and the browser then scrolls the
-  // nearest scrollable ancestor to bring it into view — which drags the whole
-  // planner (form included) around. Preventing the default focus on mouse down
-  // keeps the viewport exactly where the traveller left it.
   const onMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
   };
@@ -191,11 +179,6 @@ function MapViewController({
   }, [map]);
 
   useEffect(() => {
-    // Leaflet throws "Invalid LatLng object: (NaN, NaN)" for a stop that has no
-    // usable coordinates — it does not skip such a stop. Generated and saved
-    // itineraries can both carry missing/null/out-of-range lats and lngs, so
-    // every coordinate is normalised through one helper before it reaches
-    // Leaflet and anything that fails validation is dropped.
     const coord = (lat: unknown, lng: unknown): [number, number] | null => {
       const a = typeof lat === "string" ? Number(lat) : lat;
       const b = typeof lng === "string" ? Number(lng) : lng;
@@ -215,12 +198,6 @@ function MapViewController({
     const activePoint = activeStop ? coord(activeStop.lat, activeStop.lng) : null;
     const centerPoint = coord(center?.[0], center?.[1]);
 
-    // An animated fly/fit needs a laid-out container: Leaflet projects through
-    // the map's pixel size, and when the map is 0×0 (the panel is hidden or has
-    // not been laid out yet) that division yields NaN and flyTo throws
-    // "Invalid LatLng object: (NaN, NaN)" from inside the animation loop.
-    // So: make sure the container has real dimensions first, and if it does not,
-    // wait for the next frame instead of flying into a NaN viewport.
     const size = map.getSize();
     if (!size || size.x === 0 || size.y === 0) {
       const raf = requestAnimationFrame(() => {
@@ -229,9 +206,6 @@ function MapViewController({
       return () => cancelAnimationFrame(raf);
     }
 
-    // A valid, finite point is still only safe to hand Leaflet if the map itself
-    // agrees it is a real LatLng — this catches any coordinate that slipped past
-    // the range check above for reasons specific to the Leaflet build.
     const canUse = (p: [number, number] | null): p is [number, number] =>
       p !== null && Boolean(L.latLng(p[0], p[1]));
 
@@ -250,16 +224,6 @@ function MapViewController({
   return null;
 }
 
-/**
- * Resolve route geometry for each day of the visible stops.
- *
- * Returns two maps so the map can render immediately and then improve:
- *   straightRoutes — always present, the plain stop-to-stop line
- *   roadRoutes     — road-following geometry, filled in once OSRM answers
- *
- * The straight line is what gets drawn first, so the map is never empty while
- * waiting on the network, and it stays the fallback if routing fails.
- */
 function useDayRoutes(visibleStops: ItineraryStop[]) {
   const straightRoutes = useMemo(() => {
     const groups: Record<number, Array<[number, number]>> = {};
@@ -275,8 +239,6 @@ function useDayRoutes(visibleStops: ItineraryStop[]) {
     routes: Record<number, [number, number][]>;
   }>({ key: "", routes: {} });
 
-  // Identify the request by its coordinates, not by array identity, so a
-  // re-render that produces an equal stop list does not refetch.
   const stopsKey = useMemo(
     () =>
       visibleStops
@@ -299,13 +261,8 @@ function useDayRoutes(visibleStops: ItineraryStop[]) {
     return () => {
       cancelled = true;
     };
-    // `stopsKey` stands in for visibleStops — same key means same request.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopsKey]);
 
-  // Storing the key alongside the routes means geometry from a previous stop
-  // set is never rendered once the key moves on — no setState during render,
-  // and no clearing effect needed.
   const roadRoutes = roadState.key === stopsKey ? roadState.routes : {};
 
   return { straightRoutes, roadRoutes };
@@ -317,10 +274,6 @@ export default function MapComponent({
   selectedDay = 0,
   onSelectStop,
 }: MapComponentProps) {
-  // Filter stops by selectedDay if day > 0, and drop any stop whose coordinates
-  // are missing or non-finite. Saved itineraries can carry incomplete data, and
-  // Leaflet throws "Invalid LatLng object: (NaN, NaN)" for such a stop rather
-  // than skipping it — filtering here keeps markers, routes and bounds safe.
   const visibleStops = useMemo(() => {
     const hasCoords = (s: ItineraryStop) =>
       Number.isFinite(s?.lat) && Number.isFinite(s?.lng);
@@ -345,20 +298,11 @@ export default function MapComponent({
     return [28.6139, 77.209];
   }, [visibleStops, stops]);
 
-  // Derive the active stop from the coordinate-filtered list, not the raw stops
-  // array. A saved itinerary can carry a stop with missing coords, and passing
-  // that to the map controller would hand Leaflet a NaN LatLng. Filtering here
-  // guarantees the controller only ever receives a stop that can be plotted.
   const activeStop = useMemo(
     () => visibleStops.find((s) => s.id === activeStopId),
     [visibleStops, activeStopId]
   );
 
-  // Rendered route geometry per day: {
-  //   straight: the naive stop-to-stop line, drawn immediately and kept as the
-  //             fallback whenever road routing is unavailable
-  //   road:     OSRM's road-following geometry, swapped in once it arrives
-  // }
   const { straightRoutes, roadRoutes } = useDayRoutes(visibleStops);
 
   return (
@@ -380,25 +324,12 @@ export default function MapComponent({
         activeStop={activeStop}
       />
 
-      {/* Custom zoom + / - and fit-to-view, stacked together in the top-right.
-          Fit snaps the view back to the whole route after panning or zooming
-          away from it, and fits the visible (day-filtered) stops. */}
       <MapControls stops={visibleStops} />
 
-      {/* Render Day Route Polylines.
-          Solid, Google-Maps style: a wider dark "casing" line underneath the
-          bright one. The casing is what makes a route read cleanly over busy
-          map tiles — without it the colour can disappear into dark patches.
-
-          `coords` is the road-following geometry when OSRM answered, and the
-          plain stop-to-stop line when it did not — so a routing outage
-          degrades to what the map showed before, never to a blank map. */}
       {Object.entries(straightRoutes).map(([dayNum, straightCoords]) => {
         const coords = roadRoutes[Number(dayNum)] || straightCoords;
         if (coords.length < 2) return null;
         const isRoadRouted = Boolean(roadRoutes[Number(dayNum)]);
-        // Same shared palette the itinerary list uses, so a day's colour on the
-        // map matches that day's colour in the list.
         const color = getDayColor(Number(dayNum)).hex;
         return (
           <React.Fragment key={`route-day-${dayNum}`}>
@@ -413,9 +344,6 @@ export default function MapComponent({
                 lineJoin: "round",
               }}
             />
-            {/* The route itself — fully solid, no dashes. Slightly translucent
-                until the road geometry arrives, as a cue that this is still
-                the straight-line estimate. */}
             <Polyline
               positions={coords}
               pathOptions={{
@@ -469,11 +397,11 @@ export default function MapComponent({
             <Popup>
               <div
                 className={`p-3 text-xs text-slate-100 max-w-[220px] ${
-                  isActive ? "ring-1 ring-sky-400 rounded-lg" : ""
+                  isActive ? "ring-1 ring-cyan-400 rounded-lg" : ""
                 }`}
               >
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-500/30 font-bold">
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30 font-bold">
                     {t(localization.map.dayStopBadge, {
                       day: stop.day,
                       order: stop.order,
@@ -485,7 +413,7 @@ export default function MapComponent({
                 </div>
 
                 <h4 className="font-bold text-sm text-white flex items-center gap-1">
-                  {getCategoryIcon(stop.category, "w-3.5 h-3.5 text-teal-400")}
+                  {getCategoryIcon(stop.category, "w-3.5 h-3.5 text-cyan-400")}
                   <span>{stop.name}</span>
                 </h4>
 
