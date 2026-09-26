@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "MapMyEscape",
+    "name": "Escape-Route",
     "taglinePrefix": "Ditch the Rigid Itinerary.",
     "taglineHighlight": "Escape",
     "taglineSuffix": "Your Way.",
@@ -37,7 +37,7 @@
   },
   "header": {
     "cta": "Build Your Escape",
-    "howItWorks": "How MapMyEscape Works",
+    "howItWorks": "How Escape-Route Works",
     "stepLabel": "STEP {step}"
   },
   "homepage": {
@@ -51,18 +51,18 @@
     "errorUnreachable": "We couldn't reach the itinerary service. Check your connection and try again."
   },
   "footer": {
-    "copyright": "MapMyEscape © {year} — Dynamic Travel Routes & Real-Time Geospatial Visualization"
+    "copyright": "Escape-Route © {year} — Dynamic Travel Routes & Real-Time Geospatial Visualization"
   },
   "metadata": {
-    "title": "MapMyEscape | Dynamic Travel Route Planner",
+    "title": "Escape-Route",
     "description": "Generate personalized travel itineraries with real-time route visualization on interactive maps."
   },
   "form": {
     "title": "Configure Your Escape",
     "subtitle": "Customize starting point, travel vibes, and daily rhythm.",
-    "startingCityLabel": "Starting Location / City",
-    "startingCityPlaceholder": "Enter your city or starting point",
-    "placesLabel": "Places You Want To Visit ({count} added)",
+    "startingCityLabel": "Visiting Location / City",
+    "startingCityPlaceholder": "Enter your visiting city or starting point",
+    "placesLabel": "Places You Want To Visit on that location ({count} added)",
     "placesHint": "Cafes, temples, viewpoints — anything",
     "placesPlaceholder": "e.g. Hadimba Temple, Cafe 1947, Solang Valley",
     "placesEmptyHint": "Add the exact spots you don't want to miss — they'll be scheduled into your itinerary automatically.",
@@ -73,7 +73,9 @@
     "durationUnitSingular": "Day",
     "durationUnitPlural": "Days",
     "paceLabel": "Travel Pace",
-    "transportLabel": "Preferred Transport",
+    "transportLabel": "Preferred Transport ({count} selected)",
+    "transportHintEmpty": "Tap to pick one or more",
+    "transportHintToggle": "Tap to add or remove",
     "notesLabel": "Special Requests / Custom Notes (Optional)",
     "notesPlaceholder": "e.g. Vegetarian food only, love photography spots, prefer quiet mornings...",
     "submit": "Generate Escape Route",
@@ -81,22 +83,21 @@
     "paceOptions": {
       "relaxed": {
         "label": "Relaxed",
-        "description": "1-2 stops/day, leisurely vibe"
+        "description": "4 stops/day, leisurely vibe"
       },
       "moderate": {
         "label": "Moderate",
-        "description": "3-4 stops/day, balanced pace"
+        "description": "6-7 stops/day, balanced pace"
       },
       "fast": {
         "label": "Action-Packed",
-        "description": "5+ stops/day, high energy"
+        "description": "8-9 stops/day, high energy"
       }
     },
     "transportOptions": {
       "walkingTuktuk": "Walking & TukTuk",
       "scooter": "Rented Scooter",
-      "cab": "Cab / Taxi",
-      "selfDrive": "Self-Drive Car"
+      "car": "Car / Cab / Taxi"
     }
   },
   "timeline": {

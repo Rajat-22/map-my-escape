@@ -1,14 +1,9 @@
-/**
- * Base
- *
- * Global design tokens and element defaults. This is the only stylesheet that
- * is genuinely global — everything else is scoped to a component and imported
- * by that component.
- */
-
 :root {
   --background: #020617;
   --foreground: #f8fafc;
+  --brand-from: #6366f1;
+  --brand-via: #0ea5e9;
+  --brand-to: #22d3ee;
 }
 
 body {
@@ -16,14 +11,6 @@ body {
   color: var(--foreground);
 }
 
-/**
- * Hide scrollbars while keeping the element scrollable.
- *
- * `scrollbar-width: none` covers modern Firefox; the ::-webkit- rules cover
- * Chrome/Safari/Edge. `-ms-overflow-style` is for legacy Edge. The element can
- * still be scrolled by wheel, drag, keyboard and touch — only the track/thumb
- * chrome is removed.
- */
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;

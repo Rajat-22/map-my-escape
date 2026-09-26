@@ -1,6 +1,28 @@
 import { ItineraryData } from "@/types/itinerary";
 
-const STORAGE_KEY = "mapmyescape_saved_itineraries_v1";
+const STORAGE_KEY = "escaperoute_saved_itineraries_v1";
+
+const LEGACY_TRANSPORT_MAP: Record<string, string> = {
+  "Cab / Taxi": "Car / Cab / Taxi",
+  "Self-Drive Car": "Car / Cab / Taxi",
+};
+
+export function normalizeTransport(transport: string): string {
+  if (!transport) return transport;
+  const mapped = transport
+    .split(",")
+    .map((mode) => mode.trim())
+    .filter(Boolean)
+    .map((mode) => LEGACY_TRANSPORT_MAP[mode] ?? mode);
+  return [...new Set(mapped)].join(", ");
+}
+
+function migrateItinerary(itinerary: ItineraryData): ItineraryData {
+  const normalized = normalizeTransport(itinerary.transport);
+  return normalized === itinerary.transport
+    ? itinerary
+    : { ...itinerary, transport: normalized };
+}
 
 // In-memory cache to guarantee stable reference for useSyncExternalStore / React re-renders
 let cachedRaw: string | null = null;
@@ -52,7 +74,9 @@ export function getSavedItineraries(): ItineraryData[] {
       return cachedList;
     }
     const parsed = JSON.parse(raw);
-    cachedList = Array.isArray(parsed) ? parsed : EMPTY_LIST;
+    cachedList = Array.isArray(parsed)
+      ? parsed.map(migrateItinerary)
+      : EMPTY_LIST;
     return cachedList;
   } catch (err) {
     console.warn("Error reading saved escapes from localStorage:", err);

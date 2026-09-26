@@ -1,7 +1,8 @@
-﻿﻿"use client";
+﻿"use client";
 
 import React, { useEffect } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
+import BrandMark from "@/components/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { localization } from "@/lib/localization";
 
@@ -13,40 +14,46 @@ export interface ModalDialogProps {
   children: React.ReactNode;
   showOkButton?: boolean;
   okButtonText?: string;
-  /**
-   * Primary (right-hand) action. "Done" keeps whatever the dialog holds — it
-   * closes without discarding. Falls back to `onClose` when not supplied.
-   */
   onOk?: () => void;
   cancelButtonText?: string;
-  /**
-   * Secondary (left-hand) action. "Discard & Close" abandons the current
-   * session — it should close AND reset. Falls back to `onClose` when not
-   * supplied, but callers that own state should pass it so the two footer
-   * actions are genuinely distinct.
-   */
   onCancel?: () => void;
-  /** Optional content shown on the left of the footer bar, e.g. a back action. */
   footerLeft?: React.ReactNode;
-  /**
-   * Compact chrome: drops the footer ESC hint and shrinks the footer, for
-   * dialogs whose own content already carries the primary action (e.g. a form
-   * with its own full-width submit button).
-   */
   compact?: boolean;
-  /**
-   * Optional right-hand panel that fills the dialog edge-to-edge (top, right and
-   * bottom), outside the padded content area. Used for the map, so it can touch
-   * the dialog's corners rather than sitting inside a padded, bordered box.
-   * Shown only at `lg` and up.
-   */
   sidePanel?: React.ReactNode;
-  /**
-   * The same panel's content for narrow viewports (below `lg`). It is rendered at
-   * the END of the scrollable content, so the traveller reaches it by scrolling
-   * to the bottom — the form is never crowded out by an always-on panel.
-   */
   mobilePanel?: React.ReactNode;
+  contentTone?: "default" | "themed";
+}
+
+function DialogTitle({
+  title,
+  subtitle,
+  compact,
+}: {
+  title?: string;
+  subtitle?: string;
+  compact: boolean;
+}) {
+  if (!title && !subtitle) return null;
+
+  return (
+    <div className={compact ? "mb-4" : "mb-6"}>
+      <div className="flex items-center gap-3">
+        <span className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-tr from-indigo-500 via-sky-500 to-cyan-400 flex items-center justify-center text-slate-950 shadow-lg shadow-sky-500/25">
+          <BrandMark className="w-5 h-5 text-slate-950" strokeWidth={2} />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-tight">
+            {title || localization.homepage.plannerTitle}
+          </h3>
+          {subtitle && (
+            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ModalDialog({
@@ -64,6 +71,7 @@ export default function ModalDialog({
   compact = false,
   sidePanel,
   mobilePanel,
+  contentTone = "default",
 }: ModalDialogProps) {
   // Lock background scroll when modal is open and handle Escape key
   useEffect(() => {
@@ -99,7 +107,7 @@ export default function ModalDialog({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center py-6 px-3 sm:py-8 sm:px-4 md:py-10 md:px-6"
     >
       {/* Backdrop overlay */}
       <div
@@ -108,56 +116,62 @@ export default function ModalDialog({
         aria-hidden="true"
       />
 
-      {/* Modal Dialog Box */}
-      <div className="relative w-full max-w-7xl h-[94vh] max-h-[94vh] flex flex-col rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl shadow-black/60 z-10 animate-in zoom-in-95 duration-200 lg:flex-row overflow-hidden">
-        {/* Left column: padded scrollable content. When a sidePanel is present
-            this shares the row with the edge-to-edge panel on the right. */}
+      <div className="relative w-full max-w-7xl max-h-[86vh] h-[86vh] flex flex-col rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl shadow-black/60 z-10 animate-in zoom-in-95 duration-200 sm:max-h-[88vh] sm:h-[88vh] lg:max-h-[92vh] lg:h-[92vh] lg:flex-row overflow-hidden">
         <div className={`${
             sidePanel ? "lg:w-2/5 lg:max-w-xl" : "w-full"
           } flex-col min-h-0 flex-1 flex`}>
-        {/* Modal Scrollable Body (min-h-0 lets the inner map size correctly).
-            The scrollbar is hidden; scrolling still works. */}
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none p-4 sm:p-6">
-          {/* Inline title block: the heading lives in the content flow, at the top
-              of the scrollable body, with the actions in the footer below. */}
-          {(title || subtitle) && (
-            <div className={compact ? "mb-4" : "mb-6"}>
-              <div className="flex items-center gap-3">
-                <span className="h-9 w-9 shrink-0 rounded-xl bg-teal-500/15 border-teal-500/40 flex items-center justify-center text-teal-300">
-                  <Sparkles className="w-4 h-4" />
-                </span>
-                <div className="min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-tight">
-                    {title || localization.homepage.plannerTitle}
-                  </h3>
-                  {subtitle && (
-                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-                      {subtitle}
-                    </p>
-                  )}
+        <div
+          className={`relative flex-1 min-h-0 overflow-y-auto scrollbar-none p-4 sm:p-6 ${
+            contentTone === "themed" ? "bg-[#020617]" : ""
+          }`}
+          style={
+            contentTone === "themed"
+              ? {
+                  backgroundColor: "#020617",
+                  backgroundImage:
+                    "radial-gradient(55% 45% at 12% 0%, rgba(56,189,248,0.20), transparent 68%), radial-gradient(50% 40% at 100% 8%, rgba(99,102,241,0.22), transparent 68%), radial-gradient(70% 50% at 50% 100%, rgba(34,211,238,0.12), transparent 70%), linear-gradient(150deg, #0b1220 0%, #020617 45%, #082f49 100%)",
+                  backgroundAttachment: "local",
+                  backgroundRepeat: "no-repeat",
+                  backgroundSize: "100% 100%",
+                }
+              : undefined
+          }
+        >
+          {contentTone === "themed" && (
+            <div className="relative">
+              <DialogTitle title={title} subtitle={subtitle} compact={compact} />
+
+              {children}
+
+              {mobilePanel && (
+                <div className="mt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 h-96 overflow-hidden lg:hidden">
+                  {mobilePanel}
                 </div>
-              </div>
+              )}
             </div>
           )}
 
-          {children}
+          {contentTone === "default" && (
+            <>
+              <DialogTitle title={title} subtitle={subtitle} compact={compact} />
 
-          {/* Narrow-viewport panel. Placed at the end of the scrolling content so
-              the map is reached by scrolling to the bottom, rather than always
-              occupying space above the fold. */}
-          {mobilePanel && (
-            <div className="mt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 h-96 overflow-hidden lg:hidden">
-              {mobilePanel}
-            </div>
+              {children}
+
+              {mobilePanel && (
+                <div className="mt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 h-96 overflow-hidden lg:hidden">
+                  {mobilePanel}
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* Footer — the dialog's actions live here, at the bottom, so the close
-            affordance is always reachable without a floating icon. */}
         <div
           className={`flex items-center justify-between gap-3 ${
             compact ? "px-4 sm:px-6 py-3" : "px-5 py-3.5"
-          } border-t border-slate-800/80 bg-slate-950/80 shrink-0`}
+          } border-t bg-slate-950/80 shrink-0 ${
+            contentTone === "themed" ? "border-sky-500/20" : "border-slate-800/80"
+          }`}
         >
           {footerLeft ? (
             <div className="flex items-center gap-2">{footerLeft}</div>
@@ -200,10 +214,6 @@ export default function ModalDialog({
         </div>
         </div>
 
-        {/* Edge-to-edge panel: fills the dialog to its top, right and bottom
-            edges (no padding, no inset), so a map reaches every corner. Desktop
-            only; below `lg` the same content is rendered at the end of the
-            scrollable body via `mobilePanel`. */}
         {sidePanel && (
           <div className="hidden lg:block flex-1 min-w-0 self-stretch overflow-hidden">
             {sidePanel}

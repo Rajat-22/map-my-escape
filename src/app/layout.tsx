@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: localization.metadata.title,
   description: localization.metadata.description,
+  applicationName: localization.brand.name,
+  appleWebApp: {
+    title: localization.brand.name,
+  },
 };
 
 export default function RootLayout({
