@@ -1,4 +1,4 @@
-﻿﻿﻿"use client";
+﻿"use client";
 
 import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
@@ -30,42 +30,23 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
 
 export default function Home() {
   const [isPlannerOpen, setIsPlannerOpen] = useState(false);
-
-  // Non-destructive close: hides the dialog but keeps the session, so reopening
-  // restores the itinerary. Used by "Done", the X button, ESC and the backdrop.
   const handleClosePlanner = useCallback(() => setIsPlannerOpen(false), []);
   const [formInitialValues, setFormInitialValues] = useState<TripRequest | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentItinerary, setCurrentItinerary] =
     useState<ItineraryData | null>(null);
   const [activeStopId, setActiveStopId] = useState<string | null>(null);
-  // 1-based: the timeline shows one day at a time, so the default is Day 1.
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const [isModifyingForm, setIsModifyingForm] = useState(false);
 
   const [lastSubmittedRequest, setLastSubmittedRequest] =
     useState<TripRequest | null>(null);
   const [isRemixing, setIsRemixing] = useState(false);
-
-  // Drives the generating overlay. Held separately from `isGenerating` so the
-  // overlay always has the request it is narrating, even on the first render
-  // after submit (when `lastSubmittedRequest` and `isGenerating` both flip).
   const [generatingFor, setGeneratingFor] = useState<TripRequest | null>(null);
-
-  // Which flow the overlay is narrating. A remix says "recalculating" instead
-  // of "mapping", so the traveller knows their existing plan is being reshuffled
-  // rather than built from scratch.
   const [generatingMode, setGeneratingMode] = useState<"generate" | "remix">(
     "generate"
   );
-
-  // Shown when generation fails outright. There is deliberately NO fallback
-  // itinerary: a template plan presented as a real route would be worse than
-  // an honest error, so the traveller is told to try again instead.
   const [generationError, setGenerationError] = useState<string | null>(null);
-
-  // Confirmation shown after the traveller saves or removes an itinerary from
-  // inside the dialog. Held as the toast copy itself, so the render is trivial.
   const [saveNotice, setSaveNotice] = useState<{
     title: string;
     message: string;
@@ -134,10 +115,6 @@ export default function Home() {
       variationSeed: Date.now(),
     };
 
-    // Show the same generating overlay as a first submit, so a remix reads as
-    // "recalculating" rather than the UI just freezing. `generatingFor` is what
-    // the overlay renders from, so it must be set here too — not only in
-    // handleFormSubmit.
     setGeneratingMode("remix");
     setGeneratingFor(variationRequest);
     setGenerationError(null);
@@ -178,9 +155,6 @@ export default function Home() {
     setGenerationError(null);
   };
 
-  // "Discard & Close": abandon the whole session. Closes the dialog and clears
-  // every piece of planner state, so reopening shows a fresh, empty form rather
-  // than the itinerary or half-filled inputs the traveller just rejected.
   const handleDiscardSession = useCallback(() => {
     setIsPlannerOpen(false);
     setFormInitialValues(null);
@@ -210,9 +184,6 @@ export default function Home() {
       <ModalDialog
         isOpen={isPlannerOpen}
         onClose={handleClosePlanner}
-        /* The form view already renders its own "Configure Your Escape" heading, so
-           the modal title is only shown alongside the itinerary, avoiding two
-           stacked headings. */
         title={
           currentItinerary && !isModifyingForm
             ? localization.homepage.plannerTitle
@@ -223,23 +194,13 @@ export default function Home() {
             ? localization.homepage.plannerSubtitle
             : undefined
         }
-        /* "Done" keeps whatever the dialog holds and just closes; "Discard &
-           Close" abandons the session and clears everything. Both are shown in
-           every view, so the dialog is always closed from the footer rather
-           than a floating icon. */
         showOkButton
         okButtonText={localization.common.done}
         cancelButtonText={localization.common.discardAndClose}
         onOk={handleClosePlanner}
         onCancel={handleDiscardSession}
-        /* Compact chrome: the form carries its own submit, so the footer stays lean
-           and the always-on ESC hint line is dropped. */
         compact
-        /* The itinerary view gets its own travel palette on the whole body (title
-           included); the form stays on the plain slate panel. */
         contentTone={currentItinerary && !isModifyingForm ? "themed" : "default"}
-        /* The map is an edge-to-edge side panel so it touches the dialog's top,
-           right and bottom corners instead of sitting in a padded, bordered box. */
         sidePanel={
           <MapComponent
             stops={currentItinerary?.stops || []}
@@ -248,8 +209,6 @@ export default function Home() {
             onSelectStop={(stop) => setActiveStopId(stop.id)}
           />
         }
-        /* Below lg the map is not pinned above the fold — it is rendered at the
-           end of the form so the traveller scrolls down to it. */
         mobilePanel={
           <MapComponent
             stops={currentItinerary?.stops || []}
@@ -264,7 +223,7 @@ export default function Home() {
               type="button"
               variant="subtle"
               onClick={handleCancelModify}
-              icon={<ArrowLeft className="w-3.5 h-3.5 text-sky-400" />}
+              icon={<ArrowLeft className="w-3.5 h-3.5 text-cyan-400" />}
             >
               {localization.homepage.backToItinerary}
             </Button>
@@ -325,19 +284,12 @@ export default function Home() {
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
         <p>{t(localization.footer.copyright, { year: new Date().getFullYear() })}</p>
       </footer>
-
-      {/* Transient failure notice. Fixed to the viewport so it is seen even
-          though the traveller is scrolled down at the form/map when the
-          generating overlay lifts. Shown only once the overlay is gone. */}
       <Toast
         message={generatingFor ? null : generationError}
         title={localization.homepage.errorTitle}
         onDismiss={() => setGenerationError(null)}
         closeLabel={localization.common.dismiss}
       />
-
-      {/* Save / remove confirmation, fired from the save button inside the
-          dialog. Independent of the error toast so the two can never conflict. */}
       <Toast
         variant="success"
         message={saveNotice?.message ?? null}
